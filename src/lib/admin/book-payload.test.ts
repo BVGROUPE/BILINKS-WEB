@@ -131,7 +131,7 @@ describe("buildUpdateBookFormData", () => {
     const fields = readBookFormFields(form);
     expect(fields.type_livre).toBeUndefined();
     expect(fields.titre).toBe("Titre modifié");
-    expect(fields.is_downloadable).toBe("true");
+    expect(fields.is_downloadable).toBe("false");
   });
 
   it("force is_downloadable false pour EXTERNE", () => {
@@ -175,7 +175,7 @@ describe("buildBookFormData", () => {
     expect(fields.is_downloadable).toBe("false");
   });
 
-  it("envoie is_downloadable pour INTERNE", () => {
+  it("force is_downloadable false même pour INTERNE (téléchargement désactivé)", () => {
     const file = new File(["x"], "book.pdf", { type: "application/pdf" });
     const form = buildBookFormData({
       titre: "Mon livre",
@@ -185,7 +185,7 @@ describe("buildBookFormData", () => {
       is_downloadable: true,
     });
     const fields = readBookFormFields(form);
-    expect(fields.is_downloadable).toBe("true");
+    expect(fields.is_downloadable).toBe("false");
   });
 
   it("utilise Français par défaut si langue absente", () => {

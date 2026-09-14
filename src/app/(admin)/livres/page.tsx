@@ -12,6 +12,7 @@ import { fetchAuteursPersisted, getAllAuteurs } from "@/lib/auteurs-store";
 import {
   fetchLibrariesPersisted,
   getAllLibraries,
+  libellerBibliotheque,
 } from "@/lib/libraries-store";
 import {
   archiveLivrePersisted,
@@ -239,7 +240,7 @@ export default function LivresPage() {
         await Promise.all([
           fetchCategoriesPersisted(),
           fetchAuteursPersisted(),
-          fetchLibrariesPersisted({ statut: "ACTIVE", type: "INTERNE" }),
+          fetchLibrariesPersisted(),
         ]);
         setCategories(getAllCategories());
         setAuteurs(getAllAuteurs());
@@ -302,11 +303,10 @@ export default function LivresPage() {
     [categories]
   );
 
-  const bibliothequesInternes = useMemo(
+  const bibliotheques = useMemo(
     () =>
-      getAllLibraries().filter(
-        (b) => b.type === "INTERNE" && b.statut === "ACTIVE"
-      ),
+      [...getAllLibraries()].sort((a, b) => a.nom.localeCompare(b.nom, "fr")),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [referentielsTick]
   );
 
@@ -322,12 +322,12 @@ export default function LivresPage() {
 
   const multiBibliothequesOptions = useMemo(
     () =>
-      bibliothequesInternes.map((b) => ({
+      bibliotheques.map((b) => ({
         value: b.id,
-        text: b.nom,
+        text: libellerBibliotheque(b),
         selected: false,
       })),
-    [bibliothequesInternes]
+    [bibliotheques]
   );
 
   const multiAuteursOptions = useMemo(
@@ -822,7 +822,7 @@ function TableauView({
                   "Type",
                   "Catégorie",
                   "Langue",
-                  "Maison d'édition",
+                  "Éditeur",
                   apiMode ? "Lectures" : "Année",
                   apiMode ? "Téléchargeable" : "Pages",
                   "Statut",
@@ -1009,7 +1009,6 @@ function AjouterLivreForm({
   const [bibliothequesIds, setBibliothequesIds] = useState<string[]>([]);
   const [typeLivre, setTypeLivre] = useState<TypeLivre>("INTERNE");
   const [urlExterneLivre, setUrlExterneLivre] = useState("");
-  const [isDownloadable, setIsDownloadable] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const apiMode = isApiConfigured();
@@ -1094,7 +1093,7 @@ function AjouterLivreForm({
       isbn: isbn.trim() || undefined,
       maisonEdition: maisonEdition.trim() || undefined,
       resume: resume.trim() || undefined,
-      is_downloadable: typeLivre === "INTERNE" ? isDownloadable : undefined,
+      is_downloadable: false,
     });
     setSubmitting(false);
     if (!result.ok) {
@@ -1265,7 +1264,7 @@ function AjouterLivreForm({
             </div>
 
             <div>
-              <Label htmlFor="livre-maison-edition">Maison d&apos;édition</Label>
+              <Label htmlFor="livre-maison-edition">Éditeur</Label>
               <Input
                 id="livre-maison-edition"
                 type="text"
@@ -1351,20 +1350,6 @@ function AjouterLivreForm({
               <p className="mt-1.5 text-xs text-error-500">{errors.fichier}</p>
             )}
           </div>
-          )}
-
-          {apiMode && typeLivre === "INTERNE" && (
-            <label className="flex cursor-pointer items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-              <input
-                type="checkbox"
-                checked={isDownloadable}
-                onChange={(e) => setIsDownloadable(e.target.checked)}
-                className="size-4 rounded border-gray-300"
-              />
-              <span>
-                Téléchargeable (<code>is_downloadable</code>)
-              </span>
-            </label>
           )}
 
           <div>

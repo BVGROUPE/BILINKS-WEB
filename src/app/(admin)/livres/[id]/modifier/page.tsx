@@ -10,6 +10,7 @@ import { fetchAuteursPersisted, getAllAuteurs } from "@/lib/auteurs-store";
 import {
   fetchLibrariesPersisted,
   getAllLibraries,
+  libellerBibliotheque,
 } from "@/lib/libraries-store";
 import {
   fetchLivres,
@@ -104,9 +105,7 @@ function ModifierLivreContenu({
   onSuccess: (updatedAt: string) => void;
   onCancel: () => void;
 }) {
-  const bibliothequesInternes = getAllLibraries().filter(
-    (b) => b.type === "INTERNE" && b.statut === "ACTIVE"
-  );
+  const bibliotheques = getAllLibraries();
 
   const crumbs = [
     { label: "Administration", href: "/admin" },
@@ -138,12 +137,14 @@ function ModifierLivreContenu({
 
   const multiBibliothequesOptions = useMemo(
     () =>
-      bibliothequesInternes.map((b) => ({
-        value: b.id,
-        text: b.nom,
-        selected: false,
-      })),
-    [bibliothequesInternes]
+      [...bibliotheques]
+        .sort((a, b) => a.nom.localeCompare(b.nom, "fr"))
+        .map((b) => ({
+          value: b.id,
+          text: libellerBibliotheque(b),
+          selected: false,
+        })),
+    [bibliotheques]
   );
 
   return (
@@ -222,9 +223,6 @@ function ModifierLivreForm({
   const [urlExterneLivre, setUrlExterneLivre] = useState(
     livre.urlExterneLivre ?? ""
   );
-  const [isDownloadable, setIsDownloadable] = useState(
-    livre.is_downloadable ?? false
-  );
   const [fichierLivre, setFichierLivre] = useState<File | null>(null);
   const [couverturePreview, setCouverturePreview] = useState<string | null>(
     livre.couvertureUrl || null
@@ -256,7 +254,7 @@ function ModifierLivreForm({
       maisonEdition: maisonEdition.trim() || undefined,
       resume: resume.trim() || undefined,
       fichier: fichierLivre ?? undefined,
-      is_downloadable: typeLivre === "INTERNE" ? isDownloadable : undefined,
+      is_downloadable: false,
       auteurIds,
       categorieIds: categoriesIds,
       statut,
@@ -298,7 +296,6 @@ function ModifierLivreForm({
     maisonEdition,
     resume,
     fichierLivre,
-    isDownloadable,
     categoriesIds,
     statut,
     livre.statut,
@@ -324,7 +321,7 @@ function ModifierLivreForm({
       couvertureFile: coverFile,
       fichier: typeLivre === "INTERNE" ? fichierLivre ?? undefined : undefined,
       resume: resume.trim() || undefined,
-      is_downloadable: typeLivre === "INTERNE" ? isDownloadable : undefined,
+      is_downloadable: false,
       statut,
       previousStatut: livre.statut,
     });
@@ -430,7 +427,7 @@ function ModifierLivreForm({
         </div>
 
         <div>
-          <Label htmlFor="edit-maison-edition">Maison d&apos;édition</Label>
+          <Label htmlFor="edit-maison-edition">Éditeur</Label>
           <Input
             id="edit-maison-edition"
             type="text"
@@ -534,17 +531,6 @@ function ModifierLivreForm({
               <p className="mt-1.5 text-xs text-error-500">{errors.fichier}</p>
             )}
           </div>
-          <label className="flex cursor-pointer items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-            <input
-              type="checkbox"
-              checked={isDownloadable}
-              onChange={(e) => setIsDownloadable(e.target.checked)}
-              className="size-4 rounded border-gray-300"
-            />
-            <span>
-              Téléchargeable (<code>is_downloadable</code>)
-            </span>
-          </label>
         </div>
       )}
 

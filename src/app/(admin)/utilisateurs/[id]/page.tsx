@@ -288,8 +288,10 @@ export default function UtilisateurProfilPage() {
       />
 
       <div className="grid grid-cols-1 gap-6 rounded-xl border border-gray-200 bg-white p-6 dark:border-white/[0.05] dark:bg-white/[0.03] sm:grid-cols-2 lg:grid-cols-3">
-        <DetailItem label="École" value={utilisateur.ecole} />
-        <DetailItem label="Niveau" value={utilisateur.niveau} />
+        <DetailItem label="Numéro" value={utilisateur.telephone || "—"} />
+        <DetailItem label="École" value={utilisateur.ecole || "—"} />
+        <DetailItem label="Niveau" value={utilisateur.niveau || "—"} />
+        <DetailItem label="Ville" value={utilisateur.ville || "—"} />
         <DetailItem
           label="Points"
           value={`★ ${formatEntier(utilisateur.points)}`}
@@ -308,10 +310,6 @@ export default function UtilisateurProfilPage() {
             <DetailItem
               label="E-mail vérifié"
               value={detail.auth.email_verified ? "Oui" : "Non"}
-            />
-            <DetailItem
-              label="Téléphone"
-              value={detail.auth.numero_telephone ?? "—"}
             />
             {detail.personne.bio && (
               <DetailItem label="Bio" value={String(detail.personne.bio)} />

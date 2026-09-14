@@ -21,10 +21,15 @@ export type AdminUserListItemApi = {
   email_verified?: boolean;
   date_inscription: string;
   derniere_connexion?: string | null;
+  numero_telephone?: string | null;
   personne: {
     nom: string;
     prenom: string;
     points: number;
+    ecole?: string | null;
+    niveau?: string | null;
+    ville?: string | null;
+    numero_telephone?: string | null;
   };
   abonnement_actif: {
     id: string;
@@ -108,6 +113,8 @@ export type AdminUserDetailResponse = {
     bio?: string | null;
     ecole?: string | null;
     niveau?: string | null;
+    ville?: string | null;
+    numero_telephone?: string | null;
     points: number;
     deleted_at?: string | null;
   };

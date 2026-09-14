@@ -107,7 +107,7 @@ export function validateCreateBookInput(
     input.maisonEdition?.trim() &&
     input.maisonEdition.trim().length > MAISON_EDITION_MAX
   ) {
-    return `La maison d’édition ne peut pas dépasser ${MAISON_EDITION_MAX} caractères.`;
+    return `L’éditeur ne peut pas dépasser ${MAISON_EDITION_MAX} caractères.`;
   }
 
   const anneeError = validateOptionalPositiveInt(
@@ -177,7 +177,7 @@ export function validateUpdateBookInput(
     input.maisonEdition?.trim() &&
     input.maisonEdition.trim().length > MAISON_EDITION_MAX
   ) {
-    return `La maison d’édition ne peut pas dépasser ${MAISON_EDITION_MAX} caractères.`;
+    return `L’éditeur ne peut pas dépasser ${MAISON_EDITION_MAX} caractères.`;
   }
 
   const anneeError = validateOptionalPositiveInt(
@@ -235,10 +235,9 @@ export function buildUpdateBookFormData(
     if (input.url_externe_livre?.trim()) {
       form.set("url_externe_livre", input.url_externe_livre.trim());
     }
-    form.set("is_downloadable", "false");
-  } else if (input.is_downloadable !== undefined) {
-    form.set("is_downloadable", String(input.is_downloadable));
   }
+  // Téléchargement des livres désactivé sur la plateforme.
+  form.set("is_downloadable", "false");
 
   if (
     input.anneePublication != null &&
@@ -273,10 +272,9 @@ export function buildBookFormData(input: BuildBookFormInput): FormData {
 
   if (type === "EXTERNE" && input.url_externe_livre?.trim()) {
     form.set("url_externe_livre", input.url_externe_livre.trim());
-    form.set("is_downloadable", "false");
-  } else {
-    form.set("is_downloadable", String(input.is_downloadable ?? false));
   }
+  // Téléchargement des livres désactivé sur la plateforme.
+  form.set("is_downloadable", "false");
 
   if (
     input.anneePublication != null &&

@@ -75,14 +75,61 @@ export function mapAdminPlanToMockPlan(row: AdminPlanApi): MockPlanTarifaire {
   };
 }
 
+const USER_FIELD_KEYS = {
+  telephone: ["numero_telephone", "telephone", "numero", "phone", "phone_number", "tel"],
+  ecole: ["ecole", "nom_ecole", "etablissement", "school"],
+  niveau: ["niveau", "niveau_etude", "niveau_etudes", "classe", "level"],
+  ville: ["ville", "city", "localisation", "adresse_ville"],
+} as const;
+
+/** Convertit une valeur API (texte, nombre ou objet `{ nom }`) en texte affichable. */
+function toDisplayText(value: unknown): string | null {
+  if (value == null) return null;
+  if (typeof value === "string") return value.trim() || null;
+  if (typeof value === "number") return String(value);
+  if (typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    return toDisplayText(obj.nom ?? obj.libelle ?? obj.name ?? obj.label);
+  }
+  return null;
+}
+
+/**
+ * Lit un champ utilisateur où qu'il se trouve (racine, `auth`, `personne`, `profil`) :
+ * le backend ne place pas toujours téléphone / école / niveau / ville au même niveau.
+ */
+function pickUserField(
+  sources: unknown[],
+  field: keyof typeof USER_FIELD_KEYS
+): string {
+  for (const source of sources) {
+    if (!source || typeof source !== "object") continue;
+    const obj = source as Record<string, unknown>;
+    for (const key of USER_FIELD_KEYS[field]) {
+      const text = toDisplayText(obj[key]);
+      if (text) return text;
+    }
+  }
+  return "—";
+}
+
+function userFieldSources(root: object): unknown[] {
+  const obj = root as Record<string, unknown>;
+  const personne = obj.personne as Record<string, unknown> | undefined;
+  return [obj.personne, obj.auth, obj, obj.profil, personne?.profil];
+}
+
 export function mapAdminUserToMockUser(row: AdminUserListItemApi): MockUtilisateur {
+  const sources = userFieldSources(row);
   return {
     id: row.id,
     nom: row.personne?.nom ?? "—",
     prenom: row.personne?.prenom ?? "—",
     email: row.email,
-    ecole: "—",
-    niveau: "—",
+    ecole: pickUserField(sources, "ecole"),
+    niveau: pickUserField(sources, "niveau"),
+    telephone: pickUserField(sources, "telephone"),
+    ville: pickUserField(sources, "ville"),
     role: row.role,
     statut: row.statut,
     points: row.personne?.points ?? 0,
@@ -96,26 +143,17 @@ export function mapAdminUserToMockUser(row: AdminUserListItemApi): MockUtilisate
 export function mapAdminUserDetailToMockUser(
   detail: AdminUserDetailResponse
 ): MockUtilisateur {
-  const ecole =
-    typeof detail.personne.ecole === "string"
-      ? detail.personne.ecole
-      : detail.personne.ecole != null
-        ? String(detail.personne.ecole)
-        : "—";
-  const niveau =
-    typeof detail.personne.niveau === "string"
-      ? detail.personne.niveau
-      : detail.personne.niveau != null
-        ? String(detail.personne.niveau)
-        : "—";
-  const aboActif = detail.abonnements.some((a) => a.statut === "ACTIF");
+  const sources = userFieldSources(detail);
+  const aboActif = (detail.abonnements ?? []).some((a) => a.statut === "ACTIF");
   return {
     id: detail.auth.id,
     nom: detail.personne.nom,
     prenom: detail.personne.prenom,
     email: detail.auth.email,
-    ecole: ecole || "—",
-    niveau: niveau || "—",
+    ecole: pickUserField(sources, "ecole"),
+    niveau: pickUserField(sources, "niveau"),
+    telephone: pickUserField(sources, "telephone"),
+    ville: pickUserField(sources, "ville"),
     role: detail.auth.role,
     statut: detail.auth.statut,
     points: detail.personne.points ?? 0,

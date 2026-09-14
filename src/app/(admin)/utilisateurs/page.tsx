@@ -108,7 +108,7 @@ function UsersTableSkeleton() {
       aria-busy="true"
       aria-label="Chargement des utilisateurs"
     >
-      <div className="min-w-[1100px]">
+      <div className="min-w-[1350px]">
         <div className="flex gap-3 border-b border-gray-100 px-4 py-3 dark:border-white/[0.05]">
           {Array.from({ length: 9 }).map((_, i) => (
             <TextSkeleton key={i} className="h-4 w-14" />
@@ -582,7 +582,7 @@ export default function UtilisateursPage() {
             }
           >
           <div className="overflow-x-auto">
-            <div className="min-w-[1100px]">
+            <div className="min-w-[1350px]">
               <Table>
                 <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
                   <TableRow>
@@ -590,7 +590,9 @@ export default function UtilisateursPage() {
                       "Avatar",
                       "Nom complet",
                       "E-mail",
+                      "Numéro",
                       "École / Niveau",
+                      "Ville",
                       "Rôle",
                       "Statut",
                       "Points",
@@ -623,11 +625,17 @@ export default function UtilisateursPage() {
                       <TableCell className="max-w-[220px] truncate px-4 py-3 text-start text-theme-sm text-gray-600 dark:text-gray-400">
                         {u.email}
                       </TableCell>
+                      <TableCell className="whitespace-nowrap px-4 py-3 text-start text-theme-sm text-gray-600 dark:text-gray-400">
+                        {u.telephone || "—"}
+                      </TableCell>
                       <TableCell className="px-4 py-3 text-start text-theme-sm text-gray-600 dark:text-gray-400">
-                        <span className="block">{u.ecole}</span>
+                        <span className="block">{u.ecole || "—"}</span>
                         <span className="text-theme-xs text-gray-500">
-                          {u.niveau}
+                          {u.niveau || "—"}
                         </span>
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-start text-theme-sm text-gray-600 dark:text-gray-400">
+                        {u.ville || "—"}
                       </TableCell>
                       <TableCell className="px-4 py-3 text-start">
                         {u.role === "ADMIN" ? (

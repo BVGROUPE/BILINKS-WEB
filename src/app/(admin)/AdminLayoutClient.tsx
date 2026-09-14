@@ -1,6 +1,7 @@
 "use client";
 
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { IdleLogout } from "@/components/auth/IdleLogout";
 import { useSidebar } from "@/context/SidebarContext";
 import AppHeader from "@/layout/AppHeader";
 import AppSidebar from "@/layout/AppSidebar";
@@ -25,6 +26,7 @@ export default function AdminLayoutClient({
 
   return (
     <AuthGuard>
+      <IdleLogout />
       <AdminPageSearchProvider>
       <div className="min-h-screen xl:flex">
         <AppSidebar />

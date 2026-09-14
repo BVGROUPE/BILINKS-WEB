@@ -72,6 +72,8 @@ export interface MockUtilisateur {
   email: string;
   ecole: string;
   niveau: string;
+  telephone?: string;
+  ville?: string;
   role: RoleUser;
   statut: StatutUser;
   points: number;

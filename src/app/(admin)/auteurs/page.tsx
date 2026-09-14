@@ -95,7 +95,7 @@ export default function AuteursPage() {
             Auteurs
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Gestion des auteurs du catalogue
+            Gestion des auteurs
           </p>
         </div>
         <Button

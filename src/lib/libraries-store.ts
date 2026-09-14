@@ -13,7 +13,7 @@ import type {
 } from "@/lib/api/admin-types";
 import { apiRequest, isApiConfigured } from "@/lib/api/client";
 import { messageFromApiError } from "@/lib/api/errors";
-import { unwrapListData } from "@/lib/api/pagination";
+import { unwrapListData, unwrapPaginationMeta } from "@/lib/api/pagination";
 import { ADMIN_ROUTES } from "@/lib/api/routes";
 import { isSoftDeleted, softDeleteTimestamp } from "@/lib/soft-delete";
 
@@ -64,6 +64,14 @@ export function getAllLibraries(includeDeleted = false): MockBibliotheque[] {
   return includeDeleted ? list : list.filter((b) => !isSoftDeleted(b.deletedAt));
 }
 
+/** Libellé pour les listes de choix : nom + type/statut quand ce n'est pas une bibliothèque interne active. */
+export function libellerBibliotheque(b: MockBibliotheque): string {
+  const details: string[] = [];
+  if (b.type === "EXTERNE") details.push("externe");
+  if (b.statut === "ARCHIVEE") details.push("archivée");
+  return details.length ? `${b.nom} (${details.join(", ")})` : b.nom;
+}
+
 export function getLibraryById(id: string): MockBibliotheque | null {
   return getAllLibraries(true).find((b) => b.id === id) ?? null;
 }
@@ -82,16 +90,29 @@ export async function fetchLibrariesPersisted(options?: {
   }
 
   try {
-    const params = new URLSearchParams();
-    params.set("page", String(options?.page ?? 1));
-    params.set("limit", String(options?.limit ?? LIST_LIMIT));
-    if (options?.statut) params.set("statut", options.statut);
-    if (options?.type) params.set("type", options.type);
+    const fetchPage = async (page: number) => {
+      const params = new URLSearchParams();
+      params.set("page", String(page));
+      params.set("limit", String(options?.limit ?? LIST_LIMIT));
+      if (options?.statut) params.set("statut", options.statut);
+      if (options?.type) params.set("type", options.type);
+      return apiRequest<AdminLibrariesListResponse>(
+        `${ADMIN_ROUTES.libraries.list}?${params.toString()}`
+      );
+    };
 
-    const payload = await apiRequest<AdminLibrariesListResponse>(
-      `${ADMIN_ROUTES.libraries.list}?${params.toString()}`
-    );
-    const rows = unwrapListData<AdminLibraryApi>(payload);
+    const firstPayload = await fetchPage(options?.page ?? 1);
+    const rows = unwrapListData<AdminLibraryApi>(firstPayload);
+
+    // Sans page explicite : parcourt toutes les pages (le backend peut plafonner `limit`).
+    if (options?.page === undefined) {
+      const meta = unwrapPaginationMeta<AdminLibraryApi>(firstPayload);
+      const totalPages = Math.min(meta?.total_pages ?? 1, 50);
+      for (let page = 2; page <= totalPages; page++) {
+        rows.push(...unwrapListData<AdminLibraryApi>(await fetchPage(page)));
+      }
+    }
+
     const mapped = rows.map(mapAdminLibraryToMock);
     setCache(mapped);
     return mapped;
@@ -358,14 +379,8 @@ export async function addBooksToLibraryPersisted(
     if (!library) {
       return { ok: false, error: "Bibliothèque introuvable." };
     }
-    if (library.type === "EXTERNE") {
-      return {
-        ok: false,
-        error:
-          "Seules les bibliothèques INTERNE acceptent des livres associés (RG29).",
-      };
-    }
 
+    // Toutes les bibliothèques sont proposées : le backend reste seul juge des règles d'association.
     try {
       const res = await apiRequest<AdminLibraryAddBooksResponse>(
         ADMIN_ROUTES.libraries.books(libraryId),

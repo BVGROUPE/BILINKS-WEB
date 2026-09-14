@@ -31,6 +31,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
     () => defaultSelected
   );
   const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const [isMounted, setIsMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
@@ -44,7 +45,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
     const el = triggerRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const maxHeight = 240;
+    const maxHeight = 360;
     const spaceBelow = window.innerHeight - rect.bottom - 8;
     const spaceAbove = rect.top - 8;
     const openUp = spaceBelow < 160 && spaceAbove > spaceBelow;
@@ -88,6 +89,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
 
   const toggleDropdown = () => {
     if (disabled) return;
+    setQuery("");
     setIsOpen((prev) => !prev);
   };
 
@@ -107,6 +109,14 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
     onChange?.(newSelectedOptions);
   };
 
+  const showSearch = options.length > 6;
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleOptions = normalizedQuery
+    ? options.filter((option) =>
+        option.text.toLowerCase().includes(normalizedQuery)
+      )
+    : options;
+
   const dropdown =
     isOpen && isMounted ? (
       <div
@@ -117,12 +127,24 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
         style={menuStyle}
         onClick={(e) => e.stopPropagation()}
       >
-        {options.length === 0 ? (
+        {showSearch && (
+          <div className="sticky top-0 z-10 border-b border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-900">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={`Rechercher (${options.length})…`}
+              className="h-9 w-full rounded-md border border-gray-300 px-2.5 text-sm text-gray-800 outline-hidden focus:border-brand-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+              autoFocus
+            />
+          </div>
+        )}
+        {visibleOptions.length === 0 ? (
           <p className="px-3 py-2.5 text-sm text-gray-500 dark:text-gray-400">
             Aucune option disponible
           </p>
         ) : (
-          options.map((option) => {
+          visibleOptions.map((option) => {
             const isSelected = selectedOptions.includes(option.value);
             return (
               <button
