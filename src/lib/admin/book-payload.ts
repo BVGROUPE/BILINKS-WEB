@@ -41,6 +41,7 @@ export type UpdateBookPersistedInput = {
   is_downloadable?: boolean;
   auteurIds: string[];
   categorieIds?: string[];
+  bibliothequeIds?: string[];
   statut?: "PUBLIE" | "ARCHIVE";
   previousStatut?: "PUBLIE" | "ARCHIVE";
 };

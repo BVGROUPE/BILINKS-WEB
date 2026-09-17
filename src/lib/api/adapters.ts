@@ -45,6 +45,7 @@ export function mapAdminBookToMockLivre(row: AdminBookListItemApi): MockLivre {
     auteurIds: row.auteurs?.map((a) => a.id) ?? [],
     categorieIds: categories.map((c) => c.id),
     categories,
+    bibliothequeIds: (row.bibliotheques ?? []).map((b) => b.id),
     categorie: firstCategory,
     langue: formatNullableString(row.langue),
     isbn: row.isbn ?? null,

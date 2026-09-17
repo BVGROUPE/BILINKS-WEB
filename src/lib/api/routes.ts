@@ -15,6 +15,7 @@ export const ADMIN_ROUTES = {
     archive: (id: string) => `/admin/books/${id}/archive`,
     authors: (id: string) => `/admin/books/${id}/authors`,
     categories: (id: string) => `/admin/books/${id}/categories`,
+    libraries: (id: string) => `/admin/books/${id}/libraries`,
   },
   libraries: {
     list: "/admin/libraries",

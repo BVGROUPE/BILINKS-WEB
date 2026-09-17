@@ -176,6 +176,7 @@ export type AdminBookListItemApi = {
   maison_edition?: string | null;
   auteurs?: Array<{ id: string; nom: string; prenom: string }>;
   categories?: Array<{ id: string; nom: string }>;
+  bibliotheques?: Array<{ id: string; nom: string }>;
 };
 
 export type AdminBooksListResponse = PaginatedResponse<AdminBookListItemApi>;
@@ -226,6 +227,22 @@ export type AdminBookCategoryBrief = {
 /** Réponse `POST /admin/books/{id}/categories` — remplace toutes les catégories. */
 export type AdminBookCategoriesResponse = {
   categories: AdminBookCategoryBrief[];
+};
+
+/** Bibliothèque renvoyée après association livre. */
+export type AdminBookLibraryBrief = {
+  id: string;
+  nom: string;
+};
+
+/**
+ * Réponse `POST /admin/books/{id}/libraries` — remplace toutes les
+ * bibliothèques. Seule façon d'associer un livre déjà créé à une
+ * bibliothèque INTERNE (RG29) : le formulaire de création ne couvre que
+ * l'instant de la création.
+ */
+export type AdminBookLibrariesResponse = {
+  bibliotheques: AdminBookLibraryBrief[];
 };
 
 // --- Plans ---
