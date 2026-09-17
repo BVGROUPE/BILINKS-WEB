@@ -17,6 +17,7 @@ import {
 import {
   archiveLivrePersisted,
   createLivrePersisted,
+  deleteLivrePersisted,
   fetchLivres,
 } from "@/lib/livres-store";
 import type { PaginationMeta } from "@/lib/api/pagination";
@@ -37,7 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { EyeIcon, PencilIcon, BoxCubeIcon, DocsIcon } from "@/icons";
+import { EyeIcon, PencilIcon, BoxCubeIcon, DocsIcon, TrashBinIcon } from "@/icons";
 import { BookCover } from "@/components/livres/BookCover";
 import { CoverUploader } from "@/components/livres/CoverUploader";
 import { BookFileUploader } from "@/components/livres/BookFileUploader";
@@ -183,6 +184,7 @@ export default function LivresPage() {
   const [modalOuvert, setModalOuvert] = useState(false);
   const [modalKey, setModalKey] = useState(0);
   const [archiveCible, setArchiveCible] = useState<MockLivre | null>(null);
+  const [supprimerCible, setSupprimerCible] = useState<MockLivre | null>(null);
 
   const loadLivres = useCallback(async () => {
     setLoadingLivres(true);
@@ -353,6 +355,18 @@ export default function LivresPage() {
     );
     setArchiveCible(null);
   }, [archiveCible, refresh]);
+
+  const confirmerSuppression = useCallback(async () => {
+    if (!supprimerCible) return;
+    const result = await deleteLivrePersisted(supprimerCible.id);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    await refresh();
+    toast.success(`« ${supprimerCible.titre} » supprimé définitivement.`);
+    setSupprimerCible(null);
+  }, [supprimerCible, refresh]);
 
   const livresFiltres = useMemo(() => {
     const q = apiMode ? "" : search.trim().toLowerCase();
@@ -577,6 +591,7 @@ export default function LivresPage() {
               onVoir={(id) => router.push(`/admin/livres/${id}`)}
               onEditer={(id) => router.push(`/admin/livres/${id}/modifier`)}
               onArchiver={setArchiveCible}
+              onSupprimer={setSupprimerCible}
             />
           ) : (
             <TableauView
@@ -585,6 +600,7 @@ export default function LivresPage() {
               onVoir={(id) => router.push(`/admin/livres/${id}`)}
               onEditer={(id) => router.push(`/admin/livres/${id}/modifier`)}
               onArchiver={setArchiveCible}
+              onSupprimer={setSupprimerCible}
             />
           )}
         </div>
@@ -635,6 +651,24 @@ export default function LivresPage() {
         }
         confirmLabel="Archiver"
         variant="warning"
+      />
+
+      <ConfirmDialog
+        isOpen={supprimerCible != null}
+        onClose={() => setSupprimerCible(null)}
+        onConfirm={confirmerSuppression}
+        title="Supprimer définitivement ce livre ?"
+        description={
+          supprimerCible ? (
+            <>
+              « {supprimerCible.titre} » sera effacé — le fichier et la
+              couverture aussi. Action irréversible. Impossible si un défi
+              référence encore ce livre.
+            </>
+          ) : null
+        }
+        confirmLabel="Supprimer"
+        variant="danger"
       />
 
       <Modal
@@ -688,11 +722,13 @@ function GrilleView({
   onVoir,
   onEditer,
   onArchiver,
+  onSupprimer,
 }: {
   livres: MockLivre[];
   onVoir: (id: string) => void;
   onEditer: (id: string) => void;
   onArchiver: (livre: MockLivre) => void;
+  onSupprimer: (livre: MockLivre) => void;
 }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -730,13 +766,21 @@ function GrilleView({
                 >
                   <PencilIcon className="size-4" />
                 </button>
-                {livre.statut !== "ARCHIVE" && (
+                {livre.statut !== "ARCHIVE" ? (
                   <button
                     onClick={() => onArchiver(livre)}
                     className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-gray-700 transition hover:bg-white"
                     title="Archiver"
                   >
                     <BoxCubeIcon className="size-4" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => onSupprimer(livre)}
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-error-600 transition hover:bg-white"
+                    title="Supprimer définitivement"
+                  >
+                    <TrashBinIcon className="size-4" />
                   </button>
                 )}
               </div>
@@ -803,12 +847,14 @@ function TableauView({
   onVoir,
   onEditer,
   onArchiver,
+  onSupprimer,
 }: {
   livres: MockLivre[];
   apiMode: boolean;
   onVoir: (id: string) => void;
   onEditer: (id: string) => void;
   onArchiver: (livre: MockLivre) => void;
+  onSupprimer: (livre: MockLivre) => void;
 }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-white/[0.06] dark:bg-white/[0.02]">
@@ -949,6 +995,16 @@ function TableauView({
                       >
                         <BoxCubeIcon className="size-4" />
                       </button>
+                      {livre.statut === "ARCHIVE" && (
+                        <button
+                          type="button"
+                          title="Supprimer définitivement"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-all hover:bg-gray-100 hover:text-error-500 dark:hover:bg-white/5"
+                          onClick={() => onSupprimer(livre)}
+                        >
+                          <TrashBinIcon className="size-4" />
+                        </button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

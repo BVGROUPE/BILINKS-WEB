@@ -10,6 +10,8 @@ import type {
 
   AdminChallengeCreateResponse,
 
+  AdminChallengeDeleteResponse,
+
   AdminChallengeUpdateResponse,
 
   AdminChallengeListItemApi,
@@ -523,3 +525,28 @@ export async function fetchChallengeParticipantsPersisted(
   }
 }
 
+
+export async function deleteChallengePersisted(
+  id: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (isApiConfigured()) {
+    try {
+      await apiRequest<AdminChallengeDeleteResponse>(
+        ADMIN_ROUTES.challenges.byId(id),
+        { method: "DELETE" }
+      );
+      await fetchChallengesPersisted();
+      return { ok: true };
+    } catch (err) {
+      return {
+        ok: false,
+        error: messageFromApiError(err, "Suppression du défi impossible."),
+      };
+    }
+  }
+
+  const rows = ensureChallenges();
+  const next = rows.filter((d) => d.id !== id);
+  setCache(next);
+  return { ok: true };
+}

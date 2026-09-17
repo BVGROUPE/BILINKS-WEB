@@ -3,6 +3,7 @@ import { mapAdminBadgeToMock } from "@/lib/api/adapters";
 import { isAdminListApiReady , API_REQUIRED_MESSAGE } from "@/lib/api/admin-list-fetch";
 import type {
   AdminBadgeCreateResponse,
+  AdminBadgeDeleteResponse,
   AdminBadgeListItemApi,
   AdminBadgeUpdateResponse,
   AdminBadgesListResponse,
@@ -320,4 +321,32 @@ export async function updateBadgePersisted(
   const next = getAllBadges().map((b) => (b.id === id ? badge : b));
   setCache(next);
   return { ok: true, badge };
+}
+
+export async function deleteBadgePersisted(
+  id: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (isApiConfigured()) {
+    if (!isAdminListApiReady()) {
+      return { ok: false, error: SESSION_REQUIRED_MESSAGE };
+    }
+    try {
+      await apiRequest<AdminBadgeDeleteResponse>(
+        ADMIN_ROUTES.badges.byId(id),
+        { method: "DELETE" }
+      );
+      const next = getAllBadges().filter((b) => b.id !== id);
+      setCache(next);
+      return { ok: true };
+    } catch (err) {
+      return {
+        ok: false,
+        error: messageFromApiError(err, "Suppression du badge impossible."),
+      };
+    }
+  }
+
+  const next = getAllBadges().filter((b) => b.id !== id);
+  setCache(next);
+  return { ok: true };
 }

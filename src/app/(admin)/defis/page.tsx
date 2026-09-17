@@ -18,11 +18,13 @@ import {
   fetchBadgesPersisted,
   createBadgePersisted,
   updateBadgePersisted,
+  deleteBadgePersisted,
 } from "@/lib/badges-store";
 import { fetchCategoriesPersisted } from "@/lib/categories-store";
 import {
   cancelChallengePersisted,
   createChallengePersisted,
+  deleteChallengePersisted,
   fetchChallengeParticipantsPersisted,
   fetchChallengesPersisted,
   updateChallengePersisted,
@@ -598,6 +600,12 @@ export default function DefisPage() {
   const [defiEdition, setDefiEdition] = useState<MockDefi | null>(null);
   const [defiSubmitting, setDefiSubmitting] = useState(false);
   const [annulerCible, setAnnulerCible] = useState<MockDefi | null>(null);
+  const [supprimerDefiCible, setSupprimerDefiCible] = useState<MockDefi | null>(
+    null
+  );
+  const [supprimerBadgeCible, setSupprimerBadgeCible] = useState<MockBadge | null>(
+    null
+  );
   const [participantsCible, setParticipantsCible] = useState<MockDefi | null>(
     null
   );
@@ -1033,6 +1041,16 @@ export default function DefisPage() {
                                   <TrashBinIcon className="size-4" />
                                 </button>
                               )}
+                              {apiMode && d.statut !== "ACTIF" && (
+                                <button
+                                  type="button"
+                                  title="Supprimer définitivement"
+                                  onClick={() => setSupprimerDefiCible(d)}
+                                  className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 ring-1 ring-gray-200 hover:text-error-500 dark:ring-gray-700"
+                                >
+                                  <TrashBinIcon className="size-4" />
+                                </button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -1146,6 +1164,23 @@ export default function DefisPage() {
                   <PencilIcon className="size-4" />
                   Modifier
                 </button>
+                {apiMode && (
+                  <button
+                    type="button"
+                    disabled={!apiSessionReady}
+                    onClick={() => {
+                      if (!apiSessionReady) {
+                        toast.error("Connectez-vous avec un compte ADMIN.");
+                        return;
+                      }
+                      setSupprimerBadgeCible(b);
+                    }}
+                    className="ml-2 inline-flex items-center gap-1.5 rounded-lg bg-error-500/15 px-3 py-1.5 text-theme-xs font-medium text-error-600 hover:bg-error-500/25 disabled:cursor-not-allowed disabled:opacity-50 dark:text-error-400"
+                  >
+                    <TrashBinIcon className="size-4" />
+                    Supprimer
+                  </button>
+                )}
               </div>
             </article>
           ))}
@@ -1532,6 +1567,71 @@ export default function DefisPage() {
         }
         confirmLabel="Annuler le défi"
         variant="warning"
+      />
+
+      <ConfirmDialog
+        isOpen={supprimerDefiCible != null}
+        onClose={() => setSupprimerDefiCible(null)}
+        onConfirm={async () => {
+          if (!supprimerDefiCible) return;
+          const result = await deleteChallengePersisted(supprimerDefiCible.id);
+          if (!result.ok) {
+            toast.error(result.error);
+            return;
+          }
+          await refresh();
+          toast.success(`« ${supprimerDefiCible.titre} » supprimé définitivement.`);
+          setSupprimerDefiCible(null);
+        }}
+        title="Supprimer définitivement ce défi ?"
+        description={
+          supprimerDefiCible ? (
+            <>
+              « {supprimerDefiCible.titre} » sera effacé, ainsi que les
+              participations associées. Action irréversible.
+            </>
+          ) : null
+        }
+        confirmLabel="Supprimer"
+        variant="danger"
+      />
+
+      <ConfirmDialog
+        isOpen={supprimerBadgeCible != null}
+        onClose={() => setSupprimerBadgeCible(null)}
+        onConfirm={async () => {
+          if (!supprimerBadgeCible) return;
+          const result = await deleteBadgePersisted(supprimerBadgeCible.id);
+          if (!result.ok) {
+            toast.error(result.error);
+            return;
+          }
+          await refresh();
+          toast.success(`« ${supprimerBadgeCible.nom} » supprimé définitivement.`);
+          setSupprimerBadgeCible(null);
+        }}
+        title="Supprimer définitivement ce badge ?"
+        description={
+          supprimerBadgeCible ? (
+            <>
+              « {supprimerBadgeCible.nom} » sera effacé. Impossible si un
+              défi référence encore ce badge.
+              {supprimerBadgeCible.nbAttribues > 0 && (
+                <>
+                  {" "}
+                  <strong>
+                    {supprimerBadgeCible.nbAttribues} utilisateur(s)
+                  </strong>{" "}
+                  ont déjà obtenu ce badge : cette obtention sera retirée
+                  de leur profil.
+                </>
+              )}
+              {" "}Action irréversible.
+            </>
+          ) : null
+        }
+        confirmLabel="Supprimer"
+        variant="danger"
       />
     </div>
   );

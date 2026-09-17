@@ -22,7 +22,8 @@ export const ADMIN_CRUD_MATRIX: CrudCoverage[] = [
     update: true,
     deleteSoft: false,
     archive: true,
-    notes: "Suppression hard absente, archivage présent.",
+    notes:
+      "Suppression définitive (hard delete) réservée aux livres ARCHIVE ; archivage présent.",
   },
   {
     entity: "auteurs",

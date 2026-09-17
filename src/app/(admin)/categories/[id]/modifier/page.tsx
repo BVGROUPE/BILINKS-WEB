@@ -16,6 +16,8 @@ import { isSoftDeleted } from "@/lib/soft-delete";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
 import TextArea from "@/components/form/input/TextArea";
+import { IconePicker } from "@/components/icones/IconePicker";
+import type { IconeKey } from "@/lib/icones";
 
 export default function ModifierCategoriePage() {
   const params = useParams();
@@ -96,6 +98,7 @@ function ModifierCategorieForm({
   const apiMode = isApiConfigured();
   const [nom, setNom] = useState(categorie.nom);
   const [description, setDescription] = useState(categorie.description);
+  const [icone, setIcone] = useState<string | null>(categorie.icone);
   const [errNom, setErrNom] = useState<string | null>(null);
   const [errUnique, setErrUnique] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -125,6 +128,7 @@ function ModifierCategorieForm({
       const result = await updateCategoryPersisted(categorie.id, {
         nom: n,
         description,
+        icone,
       });
       setSubmitting(false);
       if (!result.ok) {
@@ -144,7 +148,7 @@ function ModifierCategorieForm({
       setErrUnique(false);
       onSuccess();
     },
-    [apiMode, categorie.id, nom, description, onSuccess]
+    [apiMode, categorie.id, nom, description, icone, onSuccess]
   );
 
   return (
@@ -182,6 +186,25 @@ function ModifierCategorieForm({
           value={description}
           onChange={setDescription}
           placeholder="Description de la catégorie…"
+        />
+      </div>
+      <div>
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <Label>Icone (optionnel)</Label>
+          {icone && (
+            <button
+              type="button"
+              onClick={() => setIcone(null)}
+              className="text-theme-xs font-medium text-gray-500 underline hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            >
+              Retirer l&apos;icone
+            </button>
+          )}
+        </div>
+        <IconePicker
+          value={icone}
+          onChange={(key: IconeKey) => setIcone(key)}
+          label="Icone de la categorie"
         />
       </div>
       <div className="flex flex-wrap justify-end gap-3 border-t border-gray-100 pt-4 dark:border-gray-800">

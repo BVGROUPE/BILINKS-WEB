@@ -16,7 +16,7 @@ export type SentAdminNotification = {
   titre: string;
   contenu: string;
   type: AdminNotificationType;
-  cible: "TOUS" | "UTILISATEUR";
+  cible: "TOUS" | "SELECTION" | "UTILISATEUR";
   authId?: string;
   destinataireLabel?: string;
   created: number;
@@ -35,6 +35,18 @@ export function mapNotificationResponseToSent(
   },
   response: AdminCreateNotificationResponse
 ): SentAdminNotification {
+  if (response.cible === "SELECTION") {
+    return {
+      id: response.groupe_id,
+      titre: input.titre,
+      contenu: input.contenu,
+      type: input.type,
+      cible: "SELECTION",
+      destinataireLabel: input.destinataireLabel,
+      created: response.created,
+      envoyeLe: new Date().toISOString(),
+    };
+  }
   const envoyeLe = new Date().toISOString();
   if (response.cible === "UTILISATEUR") {
     return {
@@ -80,6 +92,7 @@ export async function createAdminNotificationPersisted(input: {
   contenu?: string;
   type: AdminNotificationType;
   auth_id?: string;
+  auth_ids?: string[];
   destinataireLabel?: string;
 }): Promise<
   | { ok: true; notification: SentAdminNotification }
@@ -99,6 +112,12 @@ export async function createAdminNotificationPersisted(input: {
   if (!ADMIN_NOTIFICATION_TYPES.includes(input.type)) {
     return { ok: false, error: "Type de notification invalide." };
   }
+  if (input.auth_id?.trim() && input.auth_ids?.length) {
+    return {
+      ok: false,
+      error: "Choisissez soit un destinataire unique, soit une sélection.",
+    };
+  }
 
   const body: AdminCreateNotificationBody = {
     titre,
@@ -107,6 +126,7 @@ export async function createAdminNotificationPersisted(input: {
   const contenu = input.contenu?.trim();
   if (contenu) body.contenu = contenu;
   if (input.auth_id?.trim()) body.auth_id = input.auth_id.trim();
+  if (input.auth_ids?.length) body.auth_ids = [...new Set(input.auth_ids)];
 
   try {
     const response = await apiRequest<AdminCreateNotificationResponse>(

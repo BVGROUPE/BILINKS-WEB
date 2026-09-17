@@ -12,6 +12,7 @@ import type {
   AdminBookCategoriesResponse,
   AdminBookCategoryBrief,
   AdminBookCreateResponse,
+  AdminBookDeleteResponse,
   AdminBookListItemApi,
   AdminBookUpdateResponse,
   AdminBooksListResponse,
@@ -619,6 +620,29 @@ export async function archiveLivrePersisted(
     return {
       ok: false,
       error: messageFromApiError(err, "Archivage livre impossible."),
+    };
+  }
+}
+
+export async function deleteLivrePersisted(
+  id: string
+): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  if (!isApiConfigured()) {
+    return { ok: false, error: API_REQUIRED_MESSAGE };
+  }
+
+  try {
+    const res = await apiRequest<AdminBookDeleteResponse>(
+      ADMIN_ROUTES.books.byId(id),
+      { method: "DELETE" }
+    );
+    const next = getAllLivres().filter((l) => l.id !== id);
+    setCache(next);
+    return { ok: true, id: res.id };
+  } catch (err) {
+    return {
+      ok: false,
+      error: messageFromApiError(err, "Suppression du livre impossible."),
     };
   }
 }

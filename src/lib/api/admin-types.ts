@@ -200,6 +200,11 @@ export type AdminBookArchiveResponse = {
   statut: StatutLivre;
 };
 
+/** Réponse `DELETE /admin/books/{id}` — suppression définitive (livre ARCHIVE requis). */
+export type AdminBookDeleteResponse = {
+  id: string;
+};
+
 /** Auteur renvoyé après association livre. */
 export type AdminBookAuthorBrief = {
   id: string;
@@ -281,6 +286,8 @@ export type AdminCategorieApi = {
   id: string;
   nom: string;
   description?: string | null;
+  /** Cle icone symbolique (ICONE_KEYS, lib/icones.ts). */
+  icone?: string | null;
   nb_livres?: number;
   createdAt?: string;
 };
@@ -312,6 +319,11 @@ export type AdminBadgeUpdateResponse = {
   icone?: string;
 };
 
+/** Réponse `DELETE /admin/badges/{id}` — suppression définitive. */
+export type AdminBadgeDeleteResponse = {
+  id: string;
+};
+
 export type AdminCategoriesListResponse = PaginatedResponse<AdminCategorieApi>;
 
 /** Réponse `POST /admin/categories` — création (HTTP 201). */
@@ -340,6 +352,9 @@ export type AdminLibraryApi = {
   description?: string;
   /** Swagger : parfois `null`, une URL ou `{}` pour les bibliothèques internes. */
   url_externe?: string | Record<string, unknown> | null;
+  couverture_url?: string | null;
+  /** Cle icone symbolique (ICONE_KEYS, lib/icones.ts). */
+  icone?: string | null;
   nb_livres?: number;
 };
 
@@ -506,6 +521,11 @@ export type AdminChallengeCancelResponse = {
   nb_utilisateurs_echoues: number;
 };
 
+/** Réponse `DELETE /admin/challenges/{id}` — suppression définitive (défi non ACTIF). */
+export type AdminChallengeDeleteResponse = {
+  id: string;
+};
+
 export type StatutChallengeParticipant = "EN_COURS" | "COMPLETE" | "ECHOUE";
 
 export type AdminChallengeParticipantItemApi = {
@@ -667,6 +687,7 @@ export type AdminNotificationType = (typeof ADMIN_NOTIFICATION_TYPES)[number];
 /** POST /admin/notifications */
 export type AdminCreateNotificationBody = {
   auth_id?: string;
+  auth_ids?: string[];
   titre: string;
   contenu?: string;
   type: AdminNotificationType;
@@ -677,15 +698,24 @@ export type AdminCreateNotificationResponseUser = {
   auth_id: string;
   created: number;
   notification_id: string;
+  groupe_id: string;
+};
+
+export type AdminCreateNotificationResponseSelection = {
+  cible: "SELECTION";
+  created: number;
+  groupe_id: string;
 };
 
 export type AdminCreateNotificationResponseAll = {
   cible: "TOUS";
   created: number;
+  groupe_id: string;
 };
 
 export type AdminCreateNotificationResponse =
   | AdminCreateNotificationResponseUser
+  | AdminCreateNotificationResponseSelection
   | AdminCreateNotificationResponseAll;
 
 /** GET /admin/notifications — un élément de l'historique groupé par envoi */
@@ -694,7 +724,7 @@ export type AdminNotificationGroupItem = {
   titre: string;
   contenu: string | null;
   type: AdminNotificationType;
-  cible: "TOUS" | "UTILISATEUR";
+  cible: "TOUS" | "SELECTION" | "UTILISATEUR";
   envoyeLe: string;
   total_destinataires: number;
   nb_lus: number;

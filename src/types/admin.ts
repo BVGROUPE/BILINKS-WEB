@@ -50,6 +50,8 @@ export interface MockCategorie {
   id: string;
   nom: string;
   description: string;
+  /** Cle icone symbolique (ICONE_KEYS, lib/icones.ts) — null si non definie. */
+  icone: string | null;
   nbLivres: number;
   deletedAt: null | string;
 }
@@ -61,6 +63,8 @@ export interface MockBibliotheque {
   statut: StatutBibliotheque;
   description: string;
   urlExterne: string | null;
+  couvertureUrl: string | null;
+  icone: string | null;
   nbLivres: number;
   deletedAt: string | null;
 }
