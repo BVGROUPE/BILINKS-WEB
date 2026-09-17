@@ -2,6 +2,7 @@ import {
   Atom,
   Baby,
   Briefcase,
+  Building,
   Building2,
   BookMarked,
   BookOpen,
@@ -20,7 +21,6 @@ import {
   Plane,
   Presentation,
   School,
-  School2,
   Sparkles,
   Stethoscope,
   TrendingUp,
@@ -86,7 +86,10 @@ export const ICONE_GROUPS: IconeGroup[] = [
     titre: "Espaces & niveaux scolaires",
     options: [
       { key: "ecole", label: "École", Icon: School },
-      { key: "college", label: "Collège", Icon: School2 },
+      // Building (pas School2) : dans lucide-react, School2 est un simple
+      // alias de University — l'utiliser ici affichait la même icône que
+      // "Université" juste en dessous.
+      { key: "college", label: "Collège", Icon: Building },
       { key: "lycee", label: "Lycée", Icon: Presentation },
       { key: "universite", label: "Université", Icon: University },
       { key: "recherche", label: "Recherche", Icon: Microscope },
