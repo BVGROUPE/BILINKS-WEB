@@ -142,7 +142,7 @@ function BibliothequeForm({
       description: description.trim() || undefined,
       type,
       urlExterne: type === "EXTERNE" ? urlExterne.trim() : null,
-      icone: type === "INTERNE" ? icone : null,
+      icone,
     });
     setSubmitting(false);
   };
@@ -250,15 +250,14 @@ function BibliothequeForm({
           </div>
         )}
 
-        {type === "INTERNE" && (
-          <div>
-            <Label>Icône</Label>
-            <p className="mb-3 text-theme-xs text-gray-500 dark:text-gray-400">
-              Affichée à défaut d’une couverture uploadée.
-            </p>
-            <IconePicker value={icone} onChange={setIcone} label="Icone de la bibliotheque" />
-          </div>
-        )}
+        <div>
+          <Label>Icône</Label>
+          <p className="mb-3 text-theme-xs text-gray-500 dark:text-gray-400">
+            Affichée à défaut d’une couverture uploadée — y compris pour une
+            bibliothèque externe, tant qu’elle n’a pas de couverture.
+          </p>
+          <IconePicker value={icone} onChange={setIcone} label="Icone de la bibliotheque" />
+        </div>
 
         {initial?.statut === "ARCHIVEE" && (
           <p className="text-sm text-warning-600 dark:text-warning-400">
@@ -355,8 +354,7 @@ export default function BibliothequesPage() {
         description: data.description ?? "",
         urlExterne:
           edition.type === "EXTERNE" ? (data.urlExterne ?? undefined) : undefined,
-        icone:
-          edition.type === "INTERNE" ? (data.icone ?? undefined) : undefined,
+        icone: data.icone ?? undefined,
       });
       if (!result.ok) {
         toast.error(result.error);
@@ -506,21 +504,16 @@ export default function BibliothequesPage() {
               <div
                 className={`relative z-[2] flex flex-1 flex-col ${b.statut === "ARCHIVEE" ? "opacity-90" : ""}`}
               >
-                {b.type === "INTERNE" &&
-                  (b.couvertureUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={b.couvertureUrl}
-                      alt=""
-                      className="mb-3 h-16 w-16 rounded-full object-cover"
-                    />
-                  ) : (
-                    <IconeBadge
-                      icone={b.icone}
-                      size="md"
-                      className="mb-3"
-                    />
-                  ))}
+                {b.couvertureUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={b.couvertureUrl}
+                    alt=""
+                    className="mb-3 h-16 w-16 rounded-full object-cover"
+                  />
+                ) : (
+                  <IconeBadge icone={b.icone} size="md" className="mb-3" />
+                )}
                 <div className="mb-3 flex flex-wrap gap-2">
                   {b.type === "INTERNE" ? (
                     <Badge color="info" size="sm" variant="light">
