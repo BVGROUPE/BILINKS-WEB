@@ -138,13 +138,14 @@ function ModifierLivreContenu({
   const multiBibliothequesOptions = useMemo(
     () =>
       [...bibliotheques]
+        .filter((b) => b.type === "INTERNE") // RG29 : seule une INTERNE accepte des livres
         .sort((a, b) => a.nom.localeCompare(b.nom, "fr"))
         .map((b) => ({
           value: b.id,
           text: libellerBibliotheque(b),
-          selected: false,
+          selected: livre.bibliothequeIds?.includes(b.id) ?? false,
         })),
-    [bibliotheques]
+    [bibliotheques, livre.bibliothequeIds]
   );
 
   return (
@@ -230,6 +231,9 @@ function ModifierLivreForm({
   const [couvertureFile, setCouvertureFile] = useState<File | null>(null);
   const [categoriesIds, setCategoriesIds] = useState<string[]>(
     () => livre.categorieIds ?? []
+  );
+  const [bibliothequeIds, setBibliothequeIds] = useState<string[]>(
+    () => livre.bibliothequeIds ?? []
   );
   const [statut, setStatut] = useState<StatutLivre>(livre.statut);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -318,6 +322,7 @@ function ModifierLivreForm({
       isbn: isbn.trim() || undefined,
       auteurIds,
       categorieIds: categoriesIds,
+      bibliothequeIds,
       couvertureFile: coverFile,
       fichier: typeLivre === "INTERNE" ? fichierLivre ?? undefined : undefined,
       resume: resume.trim() || undefined,
@@ -390,6 +395,7 @@ function ModifierLivreForm({
           <MultiSelect
             label="Auteur(s) *"
             options={multiAuteursOptions}
+            defaultSelected={auteurIds}
             onChange={setAuteurIds}
           />
           {errors.auteurs && (
@@ -546,16 +552,19 @@ function ModifierLivreForm({
         <MultiSelect
           label="Catégorie(s)"
           options={multiCategoriesOptions}
+          defaultSelected={categoriesIds}
           onChange={setCategoriesIds}
         />
 
         <MultiSelect
           label="Bibliothèque(s)"
           options={multiBibliothequesOptions}
-          onChange={() => {}}
+          defaultSelected={bibliothequeIds}
+          onChange={setBibliothequeIds}
         />
         <p className="text-[11px] text-gray-400">
-          Association et retrait des bibliothèques : page Bibliothèques.
+          Bibliothèques INTERNE uniquement (RG29) — remplace l&apos;association
+          complète à l&apos;enregistrement.
         </p>
 
         <div>

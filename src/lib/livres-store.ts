@@ -13,6 +13,8 @@ import type {
   AdminBookCategoryBrief,
   AdminBookCreateResponse,
   AdminBookDeleteResponse,
+  AdminBookLibrariesResponse,
+  AdminBookLibraryBrief,
   AdminBookListItemApi,
   AdminBookUpdateResponse,
   AdminBooksListResponse,
@@ -25,7 +27,7 @@ import {
 } from "@/lib/api/pagination";
 import type { TypeLivreCatalogue } from "@/types/admin";
 import { ADMIN_ROUTES } from "@/lib/api/routes";
-import { addBooksToLibraryPersisted } from "@/lib/libraries-store";
+import { addBooksToLibraryPersisted, getLibraryById } from "@/lib/libraries-store";
 import { getAuteurById } from "@/lib/auteurs-store";
 import { getCategoryById } from "@/lib/categories-store";
 import {
@@ -295,6 +297,73 @@ export async function assignBookCategoriesPersisted(
   }
 }
 
+function applyBibliothequesToCachedLivre(
+  bookId: string,
+  bibliotheques: AdminBookLibraryBrief[]
+): void {
+  const rows = getAllLivres();
+  const idx = rows.findIndex((l) => l.id === bookId);
+  if (idx < 0) return;
+  const next = [...rows];
+  next[idx] = {
+    ...next[idx]!,
+    bibliothequeIds: bibliotheques.map((b) => b.id),
+  };
+  setCache(next);
+}
+
+/**
+ * POST /admin/books/{id}/libraries — remplace atomiquement toutes les
+ * bibliothèques d'un livre déjà créé. Seule façon d'en modifier
+ * l'association après coup : le formulaire de création ne couvre que
+ * l'instant de la création (voir CreateBookPersistedInput.bibliothequeIds).
+ */
+export async function assignBookLibrariesPersisted(
+  bookId: string,
+  bibliothequeIds: string[]
+): Promise<
+  | { ok: true; bibliotheques: AdminBookLibraryBrief[] }
+  | { ok: false; error: string }
+> {
+  const uniqueIds = [
+    ...new Set(bibliothequeIds.map((id) => id.trim()).filter(Boolean)),
+  ];
+  const invalid = uniqueIds.find((id) => !UUID_RE.test(id));
+  if (invalid) {
+    return { ok: false, error: `Identifiant bibliothèque invalide : ${invalid}` };
+  }
+
+  if (!isApiConfigured()) {
+    const bibliotheques: AdminBookLibraryBrief[] = uniqueIds.map((id) => {
+      const b = getLibraryById(id);
+      return b ? { id: b.id, nom: b.nom } : { id, nom: "—" };
+    });
+    applyBibliothequesToCachedLivre(bookId, bibliotheques);
+    if (!getLivreById(bookId)) {
+      return { ok: false, error: "Livre introuvable." };
+    }
+    return { ok: true, bibliotheques };
+  }
+
+  try {
+    const res = await apiRequest<AdminBookLibrariesResponse>(
+      ADMIN_ROUTES.books.libraries(bookId),
+      {
+        method: "POST",
+        body: JSON.stringify({ bibliotheque_ids: uniqueIds }),
+      }
+    );
+    const bibliotheques = res.bibliotheques ?? [];
+    applyBibliothequesToCachedLivre(bookId, bibliotheques);
+    return { ok: true, bibliotheques };
+  } catch (err) {
+    return {
+      ok: false,
+      error: messageFromApiError(err, "Association bibliothèques impossible."),
+    };
+  }
+}
+
 async function assignBookToLibraries(
   bookId: string,
   libraryIds: string[]
@@ -554,6 +623,16 @@ export async function updateLivrePersisted(
           if (!categoriesResult.ok) {
             await fetchLivres();
             return categoriesResult;
+          }
+        }
+        if (patch.bibliothequeIds !== undefined) {
+          const librariesResult = await assignBookLibrariesPersisted(
+            id,
+            patch.bibliothequeIds
+          );
+          if (!librariesResult.ok) {
+            await fetchLivres();
+            return librariesResult;
           }
         }
         if (

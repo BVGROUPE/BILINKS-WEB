@@ -21,6 +21,8 @@ export interface MockLivre {
   auteurIds?: string[];
   categorieIds?: string[];
   categories?: Array<{ id: string; nom: string }>;
+  /** IDs des bibliothèques INTERNE auxquelles ce livre appartient. */
+  bibliothequeIds?: string[];
   categorie: string;
   langue: string;
   isbn?: string | null;
