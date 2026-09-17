@@ -136,6 +136,7 @@ export async function createLibraryPersisted(input: {
   description?: string;
   urlExterne?: string | null;
   couvertureUrl?: string;
+  icone?: string;
 }): Promise<
   { ok: true; bibliotheque: MockBibliotheque } | { ok: false; error: string }
 > {
@@ -167,6 +168,9 @@ export async function createLibraryPersisted(input: {
       if (input.couvertureUrl?.trim()) {
         body.couverture_url = input.couvertureUrl.trim();
       }
+      if (input.icone?.trim()) {
+        body.icone = input.icone.trim();
+      }
       // INTERNE : url_externe interdit — ne jamais l’envoyer (HTTP 400).
       if (input.type === "EXTERNE") {
         body.url_externe = input.urlExterne!.trim();
@@ -190,6 +194,8 @@ export async function createLibraryPersisted(input: {
             description: input.description?.trim() || "—",
             urlExterne:
               input.type === "EXTERNE" ? input.urlExterne?.trim() ?? null : null,
+            couvertureUrl: input.couvertureUrl?.trim() || null,
+            icone: input.icone?.trim() || null,
             nbLivres: 0,
             deletedAt: null,
           },
@@ -211,6 +217,7 @@ export async function updateLibraryPersisted(
     description?: string;
     urlExterne?: string | null;
     couvertureUrl?: string;
+    icone?: string;
   }
 ): Promise<
   { ok: true; bibliotheque: MockBibliotheque } | { ok: false; error: string }
@@ -233,6 +240,10 @@ export async function updateLibraryPersisted(
       }
       if (patch.couvertureUrl?.trim()) {
         body.couverture_url = patch.couvertureUrl.trim();
+        hasField = true;
+      }
+      if (patch.icone?.trim()) {
+        body.icone = patch.icone.trim();
         hasField = true;
       }
       // url_externe : uniquement pour une bibliothèque déjà EXTERNE (jamais si INTERNE).
@@ -465,6 +476,8 @@ function createLibraryLocal(input: {
     statut: input.statut ?? "ACTIVE",
     description: input.description?.trim() || "—",
     urlExterne: input.type === "EXTERNE" ? input.urlExterne?.trim() ?? null : null,
+    couvertureUrl: null,
+    icone: null,
     nbLivres: 0,
     deletedAt: null,
   };

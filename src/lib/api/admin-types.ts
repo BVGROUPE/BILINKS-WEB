@@ -286,6 +286,8 @@ export type AdminCategorieApi = {
   id: string;
   nom: string;
   description?: string | null;
+  /** Cle icone symbolique (ICONE_KEYS, lib/icones.ts). */
+  icone?: string | null;
   nb_livres?: number;
   createdAt?: string;
 };
@@ -350,6 +352,9 @@ export type AdminLibraryApi = {
   description?: string;
   /** Swagger : parfois `null`, une URL ou `{}` pour les bibliothèques internes. */
   url_externe?: string | Record<string, unknown> | null;
+  couverture_url?: string | null;
+  /** Cle icone symbolique (ICONE_KEYS, lib/icones.ts). */
+  icone?: string | null;
   nb_livres?: number;
 };
 

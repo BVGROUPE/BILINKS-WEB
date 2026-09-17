@@ -80,21 +80,21 @@ export const mockAuteurs: MockAuteur[] = [
 
 // --- Catégories ---
 export const mockCategories: MockCategorie[] = [
-  { id: "c1", nom: "Roman", description: "Œuvres de fiction narrative", nbLivres: 45, deletedAt: null },
-  { id: "c2", nom: "Informatique", description: "Programmation, algorithmes, systèmes", nbLivres: 92, deletedAt: null },
-  { id: "c3", nom: "Philosophie", description: "Pensée critique et éthique", nbLivres: 28, deletedAt: null },
-  { id: "c4", nom: "Économie", description: "Microéconomie, macroéconomie, finance", nbLivres: 34, deletedAt: null },
-  { id: "c5", nom: "Mathématiques", description: "Algèbre, analyse, statistiques", nbLivres: 51, deletedAt: null },
-  { id: "c6", nom: "Droit", description: "Droit civil, pénal, commercial", nbLivres: 19, deletedAt: null },
+  { id: "c1", nom: "Roman", description: "Œuvres de fiction narrative", icone: "litterature", nbLivres: 45, deletedAt: null },
+  { id: "c2", nom: "Informatique", description: "Programmation, algorithmes, systèmes", icone: "technologie", nbLivres: 92, deletedAt: null },
+  { id: "c3", nom: "Philosophie", description: "Pensée critique et éthique", icone: "spiritualite", nbLivres: 28, deletedAt: null },
+  { id: "c4", nom: "Économie", description: "Microéconomie, macroéconomie, finance", icone: "finance", nbLivres: 34, deletedAt: null },
+  { id: "c5", nom: "Mathématiques", description: "Algèbre, analyse, statistiques", icone: "sciences", nbLivres: 51, deletedAt: null },
+  { id: "c6", nom: "Droit", description: "Droit civil, pénal, commercial", icone: "droit", nbLivres: 19, deletedAt: null },
 ];
 
 // --- Bibliothèques ---
 export const mockBibliotheques: MockBibliotheque[] = [
-  { id: "b1", nom: "Bibliothèque Principale COMEC", type: "INTERNE", statut: "ACTIVE", description: "Catalogue principal de B LINKS", urlExterne: null, nbLivres: 284, deletedAt: null },
-  { id: "b2", nom: "OpenLibrary", type: "EXTERNE", statut: "ACTIVE", description: "Bibliothèque numérique gratuite mondiale", urlExterne: "https://openlibrary.org", nbLivres: 0, deletedAt: null },
-  { id: "b3", nom: "Gallica — BnF", type: "EXTERNE", statut: "ACTIVE", description: "Bibliothèque numérique de la BnF", urlExterne: "https://gallica.bnf.fr", nbLivres: 0, deletedAt: null },
-  { id: "b4", nom: "Fonds Africain", type: "INTERNE", statut: "ACTIVE", description: "Littérature africaine et ouvrages locaux", urlExterne: null, nbLivres: 47, deletedAt: null },
-  { id: "b5", nom: "Archive Ancienne", type: "INTERNE", statut: "ARCHIVEE", description: "Ancienne collection, archivée", urlExterne: null, nbLivres: 12, deletedAt: null },
+  { id: "b1", nom: "Bibliothèque Principale COMEC", type: "INTERNE", statut: "ACTIVE", description: "Catalogue principal de B LINKS", urlExterne: null, couvertureUrl: null, icone: "general", nbLivres: 284, deletedAt: null },
+  { id: "b2", nom: "OpenLibrary", type: "EXTERNE", statut: "ACTIVE", description: "Bibliothèque numérique gratuite mondiale", urlExterne: "https://openlibrary.org", couvertureUrl: null, icone: null, nbLivres: 0, deletedAt: null },
+  { id: "b3", nom: "Gallica — BnF", type: "EXTERNE", statut: "ACTIVE", description: "Bibliothèque numérique de la BnF", urlExterne: "https://gallica.bnf.fr", couvertureUrl: null, icone: null, nbLivres: 0, deletedAt: null },
+  { id: "b4", nom: "Fonds Africain", type: "INTERNE", statut: "ACTIVE", description: "Littérature africaine et ouvrages locaux", urlExterne: null, couvertureUrl: null, icone: "litterature", nbLivres: 47, deletedAt: null },
+  { id: "b5", nom: "Archive Ancienne", type: "INTERNE", statut: "ARCHIVEE", description: "Ancienne collection, archivée", urlExterne: null, couvertureUrl: null, icone: "histoire", nbLivres: 12, deletedAt: null },
 ];
 
 // --- Utilisateurs ---

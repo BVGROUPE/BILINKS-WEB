@@ -123,6 +123,7 @@ export async function fetchCategoriesPersisted(options?: {
 export async function createCategoryPersisted(input: {
   nom: string;
   description: string;
+  icone?: string | null;
 }): Promise<
   { ok: true; categorie: MockCategorie } | { ok: false; error: string }
 > {
@@ -137,9 +138,12 @@ export async function createCategoryPersisted(input: {
 
   if (isApiConfigured()) {
     try {
-      const body: { nom: string; description?: string } = { nom };
+      const body: { nom: string; description?: string; icone?: string } = {
+        nom,
+      };
       const description = input.description.trim();
       if (description) body.description = description;
+      if (input.icone) body.icone = input.icone;
 
       const created = await apiRequest<AdminCategorieCreateResponse>(
         ADMIN_ROUTES.categories.create,
@@ -157,6 +161,7 @@ export async function createCategoryPersisted(input: {
             id: created.id,
             nom: created.nom,
             description: input.description.trim(),
+            icone: input.icone ?? null,
             nbLivres: 0,
             deletedAt: null,
           },
@@ -182,7 +187,7 @@ export async function createCategoryPersisted(input: {
 
 export async function updateCategoryPersisted(
   id: string,
-  patch: Pick<MockCategorie, "nom" | "description">
+  patch: Pick<MockCategorie, "nom" | "description" | "icone">
 ): Promise<
   | { ok: true; categorie: MockCategorie; updatedAt?: string }
   | { ok: false; error: string }
@@ -198,9 +203,11 @@ export async function updateCategoryPersisted(
 
   if (isApiConfigured()) {
     try {
-      const body: { nom: string; description: string } = {
+      // icone: chaine vide = retrait explicite cote API (UpdateAdminCategorieDto).
+      const body: { nom: string; description: string; icone: string } = {
         nom,
         description: patch.description.trim(),
+        icone: patch.icone ?? "",
       };
 
       const res = await apiRequest<AdminCategorieUpdateResponse>(
@@ -282,6 +289,7 @@ function createCategoryLocal(input: {
     id: `c-${Date.now()}`,
     nom,
     description: input.description.trim(),
+    icone: null,
     nbLivres: 0,
     deletedAt: null,
   };

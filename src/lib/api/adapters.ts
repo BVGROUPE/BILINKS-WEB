@@ -265,6 +265,8 @@ export function mapAdminLibraryToMock(row: AdminLibraryApi): MockBibliotheque {
     statut: row.statut,
     description: desc || "—",
     urlExterne: url,
+    couvertureUrl: row.couverture_url ?? null,
+    icone: row.icone ?? null,
     nbLivres: row.nb_livres ?? 0,
     deletedAt: null,
   };
@@ -334,6 +336,7 @@ export function mapAdminCategorieToMock(
     id: row.id,
     nom: row.nom,
     description: desc,
+    icone: row.icone ?? null,
     nbLivres: row.nb_livres ?? 0,
     deletedAt: null,
   };

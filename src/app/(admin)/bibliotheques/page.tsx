@@ -27,6 +27,8 @@ import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
 import TextArea from "@/components/form/input/TextArea";
 import Radio from "@/components/form/input/Radio";
+import { IconePicker } from "@/components/icones/IconePicker";
+import { IconeBadge } from "@/components/icones/IconeBadge";
 import { useAdminPageSearch } from "@/context/AdminPageSearchContext";
 import { PencilIcon, ArrowRightIcon, FolderIcon, TrashBinIcon } from "@/icons";
 
@@ -98,10 +100,12 @@ function BibliothequeForm({
     description?: string;
     type: TypeBibliotheque;
     urlExterne?: string | null;
+    icone?: string | null;
   }) => Promise<void>;
   onCancel: () => void;
 }) {
   const [nom, setNom] = useState(initial?.nom ?? "");
+  const [icone, setIcone] = useState<string | null>(initial?.icone ?? null);
   const [description, setDescription] = useState(
     initial?.description === "—" ? "" : (initial?.description ?? "")
   );
@@ -138,6 +142,7 @@ function BibliothequeForm({
       description: description.trim() || undefined,
       type,
       urlExterne: type === "EXTERNE" ? urlExterne.trim() : null,
+      icone: type === "INTERNE" ? icone : null,
     });
     setSubmitting(false);
   };
@@ -245,6 +250,16 @@ function BibliothequeForm({
           </div>
         )}
 
+        {type === "INTERNE" && (
+          <div>
+            <Label>Icône</Label>
+            <p className="mb-3 text-theme-xs text-gray-500 dark:text-gray-400">
+              Affichée à défaut d’une couverture uploadée.
+            </p>
+            <IconePicker value={icone} onChange={setIcone} label="Icone de la bibliotheque" />
+          </div>
+        )}
+
         {initial?.statut === "ARCHIVEE" && (
           <p className="text-sm text-warning-600 dark:text-warning-400">
             Bibliothèque archivée : utilisez le bouton Désarchiver sur la carte
@@ -332,6 +347,7 @@ export default function BibliothequesPage() {
     description?: string;
     type: TypeBibliotheque;
     urlExterne?: string | null;
+    icone?: string | null;
   }) => {
     if (modalMode === "modifier" && edition) {
       const result = await updateLibraryPersisted(edition.id, {
@@ -339,6 +355,8 @@ export default function BibliothequesPage() {
         description: data.description ?? "",
         urlExterne:
           edition.type === "EXTERNE" ? (data.urlExterne ?? undefined) : undefined,
+        icone:
+          edition.type === "INTERNE" ? (data.icone ?? undefined) : undefined,
       });
       if (!result.ok) {
         toast.error(result.error);
@@ -351,6 +369,7 @@ export default function BibliothequesPage() {
         type: data.type,
         description: data.description,
         urlExterne: data.urlExterne,
+        icone: data.icone ?? undefined,
       });
       if (!result.ok) {
         toast.error(result.error);
@@ -487,6 +506,21 @@ export default function BibliothequesPage() {
               <div
                 className={`relative z-[2] flex flex-1 flex-col ${b.statut === "ARCHIVEE" ? "opacity-90" : ""}`}
               >
+                {b.type === "INTERNE" &&
+                  (b.couvertureUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={b.couvertureUrl}
+                      alt=""
+                      className="mb-3 h-16 w-16 rounded-full object-cover"
+                    />
+                  ) : (
+                    <IconeBadge
+                      icone={b.icone}
+                      size="md"
+                      className="mb-3"
+                    />
+                  ))}
                 <div className="mb-3 flex flex-wrap gap-2">
                   {b.type === "INTERNE" ? (
                     <Badge color="info" size="sm" variant="light">

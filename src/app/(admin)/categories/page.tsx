@@ -21,6 +21,10 @@ import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
 import TextArea from "@/components/form/input/TextArea";
 import { FolderIcon } from "@/icons";
+import { Folder } from "lucide-react";
+import { IconePicker } from "@/components/icones/IconePicker";
+import { IconeBadge } from "@/components/icones/IconeBadge";
+import type { IconeKey } from "@/lib/icones";
 import { useAdminPageSearch } from "@/context/AdminPageSearchContext";
 
 function formatLivres(n: number): string {
@@ -167,9 +171,12 @@ export default function CategoriesPage() {
               <div
                 className={`relative z-[2] flex flex-1 flex-col ${supprimee ? "opacity-40" : ""}`}
               >
-                <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">
-                  {c.nom}
-                </h2>
+                <div className="flex items-center gap-3">
+                  <IconeBadge icone={c.icone} size="sm" fallback={Folder} />
+                  <h2 className="text-xl font-bold text-gray-800 dark:text-white/90">
+                    {c.nom}
+                  </h2>
+                </div>
                 <p className="mt-3 flex-1 text-sm text-gray-600 dark:text-gray-400">
                   {c.description}
                 </p>
@@ -258,6 +265,7 @@ function AjouterCategorieForm({
   const apiMode = isApiConfigured();
   const [nom, setNom] = useState("");
   const [description, setDescription] = useState("");
+  const [icone, setIcone] = useState<string | null>(null);
   const [errNom, setErrNom] = useState<string | null>(null);
   const [errUnique, setErrUnique] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -279,7 +287,7 @@ function AjouterCategorieForm({
     }
     setErrNom(null);
     setSubmitting(true);
-    const result = await createCategoryPersisted({ nom: n, description });
+    const result = await createCategoryPersisted({ nom: n, description, icone });
     setSubmitting(false);
     if (!result.ok) {
       if (
@@ -338,6 +346,18 @@ function AjouterCategorieForm({
             value={description}
             onChange={setDescription}
             placeholder="Description de la catégorie…"
+          />
+        </div>
+        <div>
+          <Label>Icone (optionnel)</Label>
+          <p className="mb-2 text-theme-xs text-gray-500 dark:text-gray-400">
+            Affichee dans l&apos;application mobile a cote du nom de la
+            categorie.
+          </p>
+          <IconePicker
+            value={icone}
+            onChange={(key: IconeKey) => setIcone(key)}
+            label="Icone de la categorie"
           />
         </div>
         <div className="flex justify-end border-t border-gray-100 pt-4 dark:border-gray-800">
