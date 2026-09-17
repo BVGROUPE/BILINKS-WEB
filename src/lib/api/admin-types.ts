@@ -682,6 +682,7 @@ export type AdminNotificationType = (typeof ADMIN_NOTIFICATION_TYPES)[number];
 /** POST /admin/notifications */
 export type AdminCreateNotificationBody = {
   auth_id?: string;
+  auth_ids?: string[];
   titre: string;
   contenu?: string;
   type: AdminNotificationType;
@@ -692,15 +693,24 @@ export type AdminCreateNotificationResponseUser = {
   auth_id: string;
   created: number;
   notification_id: string;
+  groupe_id: string;
+};
+
+export type AdminCreateNotificationResponseSelection = {
+  cible: "SELECTION";
+  created: number;
+  groupe_id: string;
 };
 
 export type AdminCreateNotificationResponseAll = {
   cible: "TOUS";
   created: number;
+  groupe_id: string;
 };
 
 export type AdminCreateNotificationResponse =
   | AdminCreateNotificationResponseUser
+  | AdminCreateNotificationResponseSelection
   | AdminCreateNotificationResponseAll;
 
 /** GET /admin/notifications — un élément de l'historique groupé par envoi */
@@ -709,7 +719,7 @@ export type AdminNotificationGroupItem = {
   titre: string;
   contenu: string | null;
   type: AdminNotificationType;
-  cible: "TOUS" | "UTILISATEUR";
+  cible: "TOUS" | "SELECTION" | "UTILISATEUR";
   envoyeLe: string;
   total_destinataires: number;
   nb_lus: number;

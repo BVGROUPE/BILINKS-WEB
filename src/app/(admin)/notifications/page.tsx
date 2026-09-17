@@ -88,12 +88,20 @@ type ApiNotifFormState = {
   titre: string;
   contenu: string;
   type: AdminNotificationType;
-  cibleMode: "TOUS" | "UTILISATEUR";
+  cibleMode: "TOUS" | "UTILISATEUR" | "SELECTION";
   authId: string;
+  authIds: string[];
 };
 
 function defaultApiNotifForm(): ApiNotifFormState {
-  return { titre: "", contenu: "", type: "ANNONCE", cibleMode: "TOUS", authId: "" };
+  return {
+    titre: "",
+    contenu: "",
+    type: "ANNONCE",
+    cibleMode: "TOUS",
+    authId: "",
+    authIds: [],
+  };
 }
 
 function ApiNotificationForm({
@@ -107,6 +115,7 @@ function ApiNotificationForm({
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<MockUtilisateur[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [rechercheSelection, setRechercheSelection] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -123,6 +132,9 @@ function ApiNotificationForm({
     if (form.cibleMode === "UTILISATEUR" && !form.authId) {
       toast.error("Sélectionnez un utilisateur."); return;
     }
+    if (form.cibleMode === "SELECTION" && form.authIds.length === 0) {
+      toast.error("Sélectionnez au moins un utilisateur."); return;
+    }
 
     const selected = users.find((u) => u.id === form.authId);
     setLoading(true);
@@ -131,7 +143,15 @@ function ApiNotificationForm({
       contenu: form.contenu,
       type: form.type,
       auth_id: form.cibleMode === "UTILISATEUR" ? form.authId : undefined,
-      destinataireLabel: selected ? `${selected.prenom} ${selected.nom}`.trim() : undefined,
+      auth_ids: form.cibleMode === "SELECTION" ? form.authIds : undefined,
+      destinataireLabel:
+        form.cibleMode === "UTILISATEUR"
+          ? selected
+            ? `${selected.prenom} ${selected.nom}`.trim()
+            : undefined
+          : form.cibleMode === "SELECTION"
+            ? `${form.authIds.length} utilisateur(s) sélectionné(s)`
+            : undefined,
     });
     setLoading(false);
 
@@ -152,8 +172,10 @@ function ApiNotificationForm({
     onSubmit(item);
     toast.success(
       result.notification.cible === "TOUS"
-        ? `Notification envoyée à ${result.notification.created} utilisateur(s).`
-        : "Notification envoyée à l'utilisateur."
+        ? `Notification envoyée à ${result.notification.created} utilisateur(s) (tous les comptes actifs).`
+        : result.notification.cible === "SELECTION"
+          ? `Notification envoyée à ${result.notification.created} utilisateur(s) sélectionné(s).`
+          : "Notification envoyée à l'utilisateur."
     );
   };
 
@@ -209,13 +231,15 @@ function ApiNotificationForm({
             onChange={(e) =>
               setForm((f) => ({
                 ...f,
-                cibleMode: e.target.value as "TOUS" | "UTILISATEUR",
+                cibleMode: e.target.value as "TOUS" | "UTILISATEUR" | "SELECTION",
                 authId: e.target.value === "TOUS" ? "" : f.authId,
+                authIds: e.target.value === "SELECTION" ? f.authIds : [],
               }))
             }
           >
             <option value="TOUS">Tous les comptes actifs</option>
             <option value="UTILISATEUR">Un utilisateur précis</option>
+            <option value="SELECTION">Une sélection d’utilisateurs</option>
           </select>
         </div>
         {form.cibleMode === "UTILISATEUR" && (
@@ -237,6 +261,73 @@ function ApiNotificationForm({
                 </option>
               ))}
             </select>
+          </div>
+        )}
+        {form.cibleMode === "SELECTION" && (
+          <div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="api-n-recherche">Utilisateurs * ({form.authIds.length} sélectionné{form.authIds.length > 1 ? "s" : ""})</Label>
+              {form.authIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, authIds: [] }))}
+                  className="text-theme-xs font-medium text-brand-500 hover:underline"
+                >
+                  Tout désélectionner
+                </button>
+              )}
+            </div>
+            <Input
+              id="api-n-recherche"
+              type="text"
+              placeholder="Filtrer par nom ou e-mail…"
+              value={rechercheSelection}
+              onChange={(e) => setRechercheSelection(e.target.value)}
+            />
+            <div className="mt-2 max-h-56 space-y-1 overflow-y-auto rounded-lg border border-gray-200 p-2 dark:border-gray-700">
+              {loadingUsers ? (
+                <p className="p-2 text-theme-sm text-gray-500">Chargement…</p>
+              ) : (
+                users
+                  .filter((u) => {
+                    const q = rechercheSelection.trim().toLowerCase();
+                    if (!q) return true;
+                    return (
+                      `${u.prenom} ${u.nom}`.toLowerCase().includes(q) ||
+                      u.email.toLowerCase().includes(q)
+                    );
+                  })
+                  .map((u) => {
+                    const checked = form.authIds.includes(u.id);
+                    return (
+                      <label
+                        key={u.id}
+                        className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-theme-sm hover:bg-gray-50 dark:hover:bg-white/[0.04]"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() =>
+                            setForm((f) => ({
+                              ...f,
+                              authIds: checked
+                                ? f.authIds.filter((id) => id !== u.id)
+                                : [...f.authIds, u.id],
+                            }))
+                          }
+                          className="size-4 rounded border-gray-300"
+                        />
+                        <span className="text-gray-700 dark:text-gray-300">
+                          {u.prenom} {u.nom} · {u.email}
+                        </span>
+                      </label>
+                    );
+                  })
+              )}
+              {!loadingUsers && users.length === 0 && (
+                <p className="p-2 text-theme-sm text-gray-500">Aucun utilisateur actif.</p>
+              )}
+            </div>
           </div>
         )}
         <div className="flex justify-end gap-2 border-t border-gray-100 pt-4 dark:border-gray-800">
@@ -465,7 +556,11 @@ function ApiHistoriqueTable({
                     </Badge>
                   </TableCell>
                   <TableCell className="px-4 py-3 text-start text-theme-sm text-gray-600 dark:text-gray-400">
-                    {n.cible === "TOUS" ? "Tous les comptes actifs" : "Utilisateur ciblé"}
+                    {n.cible === "TOUS"
+                      ? "Tous les comptes actifs"
+                      : n.cible === "SELECTION"
+                        ? `Sélection (${n.total_destinataires})`
+                        : "Utilisateur ciblé"}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-center text-theme-sm font-medium text-gray-800 dark:text-white/80">
                     {n.total_destinataires}
