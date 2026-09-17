@@ -200,6 +200,11 @@ export type AdminBookArchiveResponse = {
   statut: StatutLivre;
 };
 
+/** Réponse `DELETE /admin/books/{id}` — suppression définitive (livre ARCHIVE requis). */
+export type AdminBookDeleteResponse = {
+  id: string;
+};
+
 /** Auteur renvoyé après association livre. */
 export type AdminBookAuthorBrief = {
   id: string;
@@ -310,6 +315,11 @@ export type AdminBadgeUpdateResponse = {
   updatedAt: string;
   /** Présent si une nouvelle icône a été uploadée sur Cloudinary. */
   icone?: string;
+};
+
+/** Réponse `DELETE /admin/badges/{id}` — suppression définitive. */
+export type AdminBadgeDeleteResponse = {
+  id: string;
 };
 
 export type AdminCategoriesListResponse = PaginatedResponse<AdminCategorieApi>;
@@ -504,6 +514,11 @@ export type AdminChallengeUpdateResponse = {
 export type AdminChallengeCancelResponse = {
   statut: string;
   nb_utilisateurs_echoues: number;
+};
+
+/** Réponse `DELETE /admin/challenges/{id}` — suppression définitive (défi non ACTIF). */
+export type AdminChallengeDeleteResponse = {
+  id: string;
 };
 
 export type StatutChallengeParticipant = "EN_COURS" | "COMPLETE" | "ECHOUE";
