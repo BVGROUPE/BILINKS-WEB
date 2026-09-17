@@ -454,6 +454,43 @@ export type AdminEtablissementCreateBody = {
   duree_jours: number;
 };
 
+/**
+ * Offre établissement « externe » (catalogue public, `GET /etablissements/offres`,
+ * page /subscribe?type=etablissement) — distincte du pack établissement
+ * « interne » (`AdminEtablissementApi`), créé par un admin pour une
+ * négociation directe et jamais listé publiquement.
+ */
+export type AdminEtablissementOffreApi = {
+  id: string;
+  nom: string;
+  nb_users_max: number;
+  prix: number;
+  devise: string;
+  duree_jours: number;
+  statut: "ACTIF" | "INACTIF";
+  createdAt: string;
+};
+
+export type AdminEtablissementOffresListResponse = {
+  data: AdminEtablissementOffreApi[];
+};
+
+export type AdminEtablissementOffreCreateBody = {
+  nom: string;
+  nb_users_max: number;
+  prix: number;
+  devise?: string;
+  duree_jours: number;
+};
+
+export type AdminEtablissementOffreUpdateBody = {
+  nom?: string;
+  nb_users_max?: number;
+  prix?: number;
+  duree_jours?: number;
+  statut?: "ACTIF" | "INACTIF";
+};
+
 /** Réponse `POST /admin/libraries` — statut ACTIVE par défaut côté serveur. */
 export type AdminLibraryCreateResponse = {
   id: string;

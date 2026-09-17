@@ -128,3 +128,22 @@ export async function detachMembrePersisted(
     return { ok: false, error: messageFromApiError(err, "Retrait impossible.") };
   }
 }
+
+/** DELETE /admin/etablissements/{id} — réservé aux packs dont l'accès a expiré. */
+export async function deleteEtablissementPersisted(
+  id: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!isApiConfigured()) return { ok: false, error: API_REQUIRED_MESSAGE };
+
+  try {
+    await apiRequest(ADMIN_ROUTES.etablissements.byId(id), {
+      method: "DELETE",
+    });
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: messageFromApiError(err, "Suppression impossible."),
+    };
+  }
+}

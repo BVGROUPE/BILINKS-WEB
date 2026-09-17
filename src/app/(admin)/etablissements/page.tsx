@@ -8,21 +8,30 @@ import { isApiConfigured } from "@/lib/api/client";
 import type {
   AdminEtablissementApi,
   AdminEtablissementDetailApi,
+  AdminEtablissementOffreApi,
   AdminEtablissementPerformanceApi,
 } from "@/lib/api/admin-types";
 import {
   attachMembrePersisted,
   createEtablissementPersisted,
+  deleteEtablissementPersisted,
   detachMembrePersisted,
   fetchEtablissementDetailPersisted,
   fetchEtablissementPerformancePersisted,
   fetchEtablissementsPersisted,
   prolongerEtablissementPersisted,
 } from "@/lib/etablissements-store";
+import {
+  createEtablissementOffrePersisted,
+  deleteEtablissementOffrePersisted,
+  fetchEtablissementOffresPersisted,
+  updateEtablissementOffrePersisted,
+} from "@/lib/etablissement-offres-store";
 import { formatXaf } from "@/lib/abonnements-utils";
 import Badge from "@/components/ui/badge/Badge";
 import Button from "@/components/ui/button/Button";
 import { Modal } from "@/components/ui/modal";
+import { ConfirmDialog } from "@/components/ui/modal/ConfirmDialog";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
 import {
@@ -32,7 +41,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { GroupIcon } from "@/icons";
+import { GroupIcon, PencilIcon, TrashBinIcon } from "@/icons";
+
+/** Accès expiré : seule condition qui autorise la suppression définitive du pack (voir backend). */
+function isEtablissementExpire(dateFin: string): boolean {
+  return new Date(dateFin).getTime() <= Date.now();
+}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("fr-FR", {
@@ -516,7 +530,10 @@ function ProlongerModal({
   );
 }
 
-export default function EtablissementsPage() {
+/** Packs « internes » : créés directement par un admin pour une négociation
+ * directe avec une institution. Jamais listés publiquement — rejoints
+ * uniquement via le code d'invitation privé généré à la création. */
+function PacksInternesTab() {
   const apiMode = isApiConfigured();
   const [rows, setRows] = useState<AdminEtablissementApi[]>([]);
   const [loading, setLoading] = useState(true);
@@ -525,6 +542,8 @@ export default function EtablissementsPage() {
   const [prolongerCible, setProlongerCible] = useState<AdminEtablissementApi | null>(
     null
   );
+  const [suppressionCible, setSuppressionCible] =
+    useState<AdminEtablissementApi | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -572,18 +591,25 @@ export default function EtablissementsPage() {
     await refresh();
   };
 
+  const confirmerSuppression = useCallback(async () => {
+    if (!suppressionCible) return;
+    const result = await deleteEtablissementPersisted(suppressionCible.id);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success(`« ${suppressionCible.nom} » supprimé définitivement.`);
+    setSuppressionCible(null);
+    await refresh();
+  }, [suppressionCible, refresh]);
+
   return (
     <div className="space-y-6">
-      <Breadcrumb items={adminCrumb("Établissements")} />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">
-            Établissements
-          </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Packs d&apos;abonnement collectif à places limitées pour les écoles
-          </p>
-        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Négociation directe avec une institution : accès privé, rejoint via
+          un code d&apos;invitation — jamais visible sur la page publique.
+        </p>
         <Button onClick={() => setCreateOpen(true)}>Créer un pack</Button>
       </div>
 
@@ -603,23 +629,17 @@ export default function EtablissementsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                {[
-                  "Nom",
-                  "Code",
-                  "Places",
-                  "Prix",
-                  "Statut",
-                  "Fin",
-                  "",
-                ].map((h) => (
-                  <TableCell
-                    key={h}
-                    isHeader
-                    className="px-4 py-3 text-start text-theme-xs font-medium text-gray-500"
-                  >
-                    {h}
-                  </TableCell>
-                ))}
+                {["Nom", "Code", "Places", "Prix", "Statut", "Fin", ""].map(
+                  (h) => (
+                    <TableCell
+                      key={h}
+                      isHeader
+                      className="px-4 py-3 text-start text-theme-xs font-medium text-gray-500"
+                    >
+                      {h}
+                    </TableCell>
+                  )
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -659,6 +679,16 @@ export default function EtablissementsPage() {
                       >
                         Membres
                       </button>
+                      {isEtablissementExpire(r.date_fin) && (
+                        <button
+                          type="button"
+                          title="Supprimer définitivement"
+                          onClick={() => setSuppressionCible(r)}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 ring-1 ring-gray-200 transition hover:bg-gray-50 hover:text-error-500 dark:ring-gray-700 dark:hover:bg-white/5"
+                        >
+                          <TrashBinIcon className="size-4" />
+                        </button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -705,6 +735,410 @@ export default function EtablissementsPage() {
           />
         )}
       </Modal>
+
+      <ConfirmDialog
+        isOpen={suppressionCible != null}
+        onClose={() => setSuppressionCible(null)}
+        onConfirm={confirmerSuppression}
+        title="Supprimer définitivement ce pack ?"
+        description={
+          suppressionCible ? (
+            <>
+              « {suppressionCible.nom} » sera supprimé définitivement. Ses
+              membres en seront retirés ; le paiement lié, s&apos;il existe,
+              est conservé dans l&apos;historique. Action irréversible.
+            </>
+          ) : null
+        }
+        confirmLabel="Supprimer"
+        variant="danger"
+      />
+    </div>
+  );
+}
+
+type OffreForm = {
+  nom: string;
+  nb_users_max: string;
+  prix: string;
+  devise: string;
+  duree_jours: string;
+};
+
+function offreToForm(o?: AdminEtablissementOffreApi): OffreForm {
+  return {
+    nom: o?.nom ?? "",
+    nb_users_max: o ? String(o.nb_users_max) : "",
+    prix: o ? String(o.prix) : "",
+    devise: o?.devise ?? "XAF",
+    duree_jours: o ? String(o.duree_jours) : "365",
+  };
+}
+
+function OffreForm({
+  initial,
+  onSave,
+  onCancel,
+}: {
+  initial?: AdminEtablissementOffreApi;
+  onSave: (form: OffreForm) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [form, setForm] = useState<OffreForm>(offreToForm(initial));
+  const [submitting, setSubmitting] = useState(false);
+
+  const set = (key: keyof OffreForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    await onSave(form);
+    setSubmitting(false);
+  };
+
+  return (
+    <form onSubmit={submit} className="space-y-4">
+      <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+        {initial ? "Modifier l'offre" : "Nouvelle offre établissement"}
+      </h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400">
+        Visible sur la page publique (/subscribe, onglet Établissement) dès
+        que son statut est <strong>ACTIF</strong>.
+      </p>
+
+      <div>
+        <Label htmlFor="offre-nom">Nom *</Label>
+        <Input id="offre-nom" value={form.nom} onChange={set("nom")} />
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div>
+          <Label htmlFor="offre-places">Places max *</Label>
+          <Input
+            id="offre-places"
+            type="number"
+            value={form.nb_users_max}
+            onChange={set("nb_users_max")}
+          />
+        </div>
+        <div>
+          <Label htmlFor="offre-prix">Prix *</Label>
+          <Input
+            id="offre-prix"
+            type="number"
+            value={form.prix}
+            onChange={set("prix")}
+          />
+        </div>
+        <div>
+          <Label htmlFor="offre-devise">Devise</Label>
+          <Input id="offre-devise" value={form.devise} onChange={set("devise")} />
+        </div>
+      </div>
+      <div>
+        <Label htmlFor="offre-duree">Durée (jours) *</Label>
+        <Input
+          id="offre-duree"
+          type="number"
+          value={form.duree_jours}
+          onChange={set("duree_jours")}
+        />
+      </div>
+
+      <div className="flex justify-end gap-2 border-t border-gray-100 pt-4 dark:border-gray-800">
+        <Button variant="outline" onClick={onCancel}>
+          Annuler
+        </Button>
+        <button
+          type="submit"
+          disabled={submitting}
+          className="inline-flex items-center justify-center rounded-lg bg-brand-500 px-5 py-3.5 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
+        >
+          {initial ? "Enregistrer" : "Créer"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/** Offres « externes » : catalogue public en libre-service (paiement en
+ * ligne), affiché sur /subscribe?type=etablissement. */
+function OffresPubliquesTab() {
+  const apiMode = isApiConfigured();
+  const [rows, setRows] = useState<AdminEtablissementOffreApi[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editionCible, setEditionCible] =
+    useState<AdminEtablissementOffreApi | null>(null);
+  const [suppressionCible, setSuppressionCible] =
+    useState<AdminEtablissementOffreApi | null>(null);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      setRows(await fetchEtablissementOffresPersisted());
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const parseForm = (form: OffreForm) => {
+    const nb_users_max = Number(form.nb_users_max);
+    const prix = Number(form.prix);
+    const duree_jours = Number(form.duree_jours);
+    if (!form.nom.trim()) {
+      toast.error("Le nom est obligatoire.");
+      return null;
+    }
+    if (!nb_users_max || !prix || !duree_jours) {
+      toast.error("Places, prix et durée doivent être des nombres valides.");
+      return null;
+    }
+    return { nom: form.nom.trim(), nb_users_max, prix, duree_jours };
+  };
+
+  const creer = async (form: OffreForm) => {
+    const parsed = parseForm(form);
+    if (!parsed) return;
+    const result = await createEtablissementOffrePersisted({
+      ...parsed,
+      devise: form.devise.trim() || "XAF",
+    });
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success("Offre créée et publiée.");
+    setCreateOpen(false);
+    await refresh();
+  };
+
+  const modifier = async (form: OffreForm) => {
+    if (!editionCible) return;
+    const parsed = parseForm(form);
+    if (!parsed) return;
+    const result = await updateEtablissementOffrePersisted(editionCible.id, parsed);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success("Offre modifiée.");
+    setEditionCible(null);
+    await refresh();
+  };
+
+  const basculerStatut = async (o: AdminEtablissementOffreApi) => {
+    const nextStatut = o.statut === "ACTIF" ? "INACTIF" : "ACTIF";
+    const result = await updateEtablissementOffrePersisted(o.id, {
+      statut: nextStatut,
+    });
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success(
+      nextStatut === "ACTIF"
+        ? `« ${o.nom} » publiée sur la page publique.`
+        : `« ${o.nom} » retirée de la page publique.`
+    );
+    await refresh();
+  };
+
+  const confirmerSuppression = useCallback(async () => {
+    if (!suppressionCible) return;
+    const result = await deleteEtablissementOffrePersisted(suppressionCible.id);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success(`« ${suppressionCible.nom} » supprimée définitivement.`);
+    setSuppressionCible(null);
+    await refresh();
+  }, [suppressionCible, refresh]);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Catalogue public en libre-service : visible et payable directement
+          sur /subscribe (onglet Établissement) tant que le statut est{" "}
+          <strong>ACTIF</strong>.
+        </p>
+        <Button onClick={() => setCreateOpen(true)}>Créer une offre</Button>
+      </div>
+
+      {loading ? (
+        <p className="text-sm text-gray-500 dark:text-gray-400">Chargement…</p>
+      ) : rows.length === 0 ? (
+        <EmptyState
+          icon={<GroupIcon className="size-7" />}
+          message={
+            apiMode
+              ? "Aucune offre publique en base — la page /subscribe (onglet Établissement) est vide tant qu'aucune offre ACTIF n'existe."
+              : "API non configurée : impossible de charger les offres."
+          }
+        />
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {["Nom", "Places", "Prix", "Durée", "Statut", ""].map((h) => (
+                  <TableCell
+                    key={h}
+                    isHeader
+                    className="px-4 py-3 text-start text-theme-xs font-medium text-gray-500"
+                  >
+                    {h}
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((o) => (
+                <TableRow key={o.id}>
+                  <TableCell className="px-4 py-3 text-theme-sm font-medium text-gray-800 dark:text-white/90">
+                    {o.nom}
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-theme-sm text-gray-600">
+                    {o.nb_users_max}
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-theme-sm text-gray-600">
+                    {o.prix} {o.devise}
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-theme-sm text-gray-600">
+                    {o.duree_jours} j
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
+                    <button type="button" onClick={() => basculerStatut(o)}>
+                      {o.statut === "ACTIF" ? (
+                        <Badge color="success" size="sm" variant="light">
+                          Publiée
+                        </Badge>
+                      ) : (
+                        <Badge color="light" size="sm" variant="light">
+                          Masquée
+                        </Badge>
+                      )}
+                    </button>
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        title="Modifier"
+                        onClick={() => setEditionCible(o)}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 ring-1 ring-gray-200 transition hover:bg-gray-50 hover:text-brand-500 dark:ring-gray-700 dark:hover:bg-white/5"
+                      >
+                        <PencilIcon className="size-4" />
+                      </button>
+                      <button
+                        type="button"
+                        title="Supprimer définitivement"
+                        onClick={() => setSuppressionCible(o)}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 ring-1 ring-gray-200 transition hover:bg-gray-50 hover:text-error-500 dark:ring-gray-700 dark:hover:bg-white/5"
+                      >
+                        <TrashBinIcon className="size-4" />
+                      </button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      <Modal
+        isOpen={createOpen}
+        onClose={() => setCreateOpen(false)}
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto p-6 sm:p-8"
+      >
+        <OffreForm onSave={creer} onCancel={() => setCreateOpen(false)} />
+      </Modal>
+
+      <Modal
+        isOpen={editionCible != null}
+        onClose={() => setEditionCible(null)}
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto p-6 sm:p-8"
+      >
+        {editionCible && (
+          <OffreForm
+            key={editionCible.id}
+            initial={editionCible}
+            onSave={modifier}
+            onCancel={() => setEditionCible(null)}
+          />
+        )}
+      </Modal>
+
+      <ConfirmDialog
+        isOpen={suppressionCible != null}
+        onClose={() => setSuppressionCible(null)}
+        onConfirm={confirmerSuppression}
+        title="Supprimer définitivement cette offre ?"
+        description={
+          suppressionCible ? (
+            <>
+              « {suppressionCible.nom} » sera supprimée définitivement et
+              disparaîtra du catalogue public. Refusé si des paiements y sont
+              déjà liés — passez-la en « Masquée » dans ce cas. Action
+              irréversible.
+            </>
+          ) : null
+        }
+        confirmLabel="Supprimer"
+        variant="danger"
+      />
+    </div>
+  );
+}
+
+export default function EtablissementsPage() {
+  const [tab, setTab] = useState<"interne" | "externe">("interne");
+
+  return (
+    <div className="space-y-6">
+      <Breadcrumb items={adminCrumb("Établissements")} />
+      <div>
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">
+          Établissements
+        </h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          Packs d&apos;abonnement collectif à places limitées pour les écoles
+        </p>
+      </div>
+
+      <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">
+        <button
+          type="button"
+          onClick={() => setTab("interne")}
+          className={`px-4 py-2.5 text-sm font-medium ${
+            tab === "interne"
+              ? "border-b-2 border-brand-500 text-brand-500"
+              : "text-gray-500 dark:text-gray-400"
+          }`}
+        >
+          Interne (négociation directe)
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("externe")}
+          className={`px-4 py-2.5 text-sm font-medium ${
+            tab === "externe"
+              ? "border-b-2 border-brand-500 text-brand-500"
+              : "text-gray-500 dark:text-gray-400"
+          }`}
+        >
+          Externe (catalogue public)
+        </button>
+      </div>
+
+      {tab === "interne" ? <PacksInternesTab /> : <OffresPubliquesTab />}
     </div>
   );
 }

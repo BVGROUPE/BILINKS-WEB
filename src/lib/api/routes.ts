@@ -84,6 +84,11 @@ export const ADMIN_ROUTES = {
     prolonger: (id: string) => `/admin/etablissements/${id}/prolonger`,
     performance: (id: string) => `/admin/etablissements/${id}/performance`,
   },
+  etablissementOffres: {
+    list: "/admin/etablissement-offres",
+    create: "/admin/etablissement-offres",
+    byId: (id: string) => `/admin/etablissement-offres/${id}`,
+  },
   performance: {
     overview: (query?: string) =>
       `/admin/performance/overview${query ? `?${query}` : ""}`,
