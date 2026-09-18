@@ -367,9 +367,6 @@ export async function deleteLibraryPersisted(
   const rows = ensureLibraries();
   const idx = rows.findIndex((b) => b.id === id);
   if (idx < 0) return { ok: false, error: "Bibliothèque introuvable." };
-  if (rows[idx]!.statut !== "ARCHIVEE") {
-    return { ok: false, error: "Seule une bibliothèque archivée peut être supprimée." };
-  }
   setCache(rows.filter((b) => b.id !== id));
   return { ok: true };
 }

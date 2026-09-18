@@ -766,7 +766,7 @@ function GrilleView({
                 >
                   <PencilIcon className="size-4" />
                 </button>
-                {livre.statut !== "ARCHIVE" ? (
+                {livre.statut !== "ARCHIVE" && (
                   <button
                     onClick={() => onArchiver(livre)}
                     className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-gray-700 transition hover:bg-white"
@@ -774,15 +774,14 @@ function GrilleView({
                   >
                     <BoxCubeIcon className="size-4" />
                   </button>
-                ) : (
-                  <button
-                    onClick={() => onSupprimer(livre)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-error-600 transition hover:bg-white"
-                    title="Supprimer définitivement"
-                  >
-                    <TrashBinIcon className="size-4" />
-                  </button>
                 )}
+                <button
+                  onClick={() => onSupprimer(livre)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-error-600 transition hover:bg-white"
+                  title="Supprimer définitivement"
+                >
+                  <TrashBinIcon className="size-4" />
+                </button>
               </div>
             </div>
             {/* Badge statut */}
@@ -995,16 +994,14 @@ function TableauView({
                       >
                         <BoxCubeIcon className="size-4" />
                       </button>
-                      {livre.statut === "ARCHIVE" && (
-                        <button
-                          type="button"
-                          title="Supprimer définitivement"
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-all hover:bg-gray-100 hover:text-error-500 dark:hover:bg-white/5"
-                          onClick={() => onSupprimer(livre)}
-                        >
-                          <TrashBinIcon className="size-4" />
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        title="Supprimer définitivement"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-all hover:bg-gray-100 hover:text-error-500 dark:hover:bg-white/5"
+                        onClick={() => onSupprimer(livre)}
+                      >
+                        <TrashBinIcon className="size-4" />
+                      </button>
                     </div>
                   </TableCell>
                 </TableRow>

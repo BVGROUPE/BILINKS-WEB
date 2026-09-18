@@ -603,25 +603,23 @@ export default function BibliothequesPage() {
                       <IconeToggleArchive archivage />
                     </button>
                   ) : (
-                    <>
-                      <button
-                        type="button"
-                        title="Désarchiver"
-                        onClick={() => setDesarchiveCible(b)}
-                        className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 ring-1 ring-gray-200 transition hover:bg-gray-50 hover:text-success-500 dark:ring-gray-700 dark:hover:bg-white/5"
-                      >
-                        <IconeToggleArchive archivage={false} />
-                      </button>
-                      <button
-                        type="button"
-                        title="Supprimer définitivement"
-                        onClick={() => setSuppressionCible(b)}
-                        className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 ring-1 ring-gray-200 transition hover:bg-gray-50 hover:text-error-500 dark:ring-gray-700 dark:hover:bg-white/5"
-                      >
-                        <TrashBinIcon className="size-5" />
-                      </button>
-                    </>
+                    <button
+                      type="button"
+                      title="Désarchiver"
+                      onClick={() => setDesarchiveCible(b)}
+                      className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 ring-1 ring-gray-200 transition hover:bg-gray-50 hover:text-success-500 dark:ring-gray-700 dark:hover:bg-white/5"
+                    >
+                      <IconeToggleArchive archivage={false} />
+                    </button>
                   )}
+                  <button
+                    type="button"
+                    title="Supprimer définitivement"
+                    onClick={() => setSuppressionCible(b)}
+                    className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-500 ring-1 ring-gray-200 transition hover:bg-gray-50 hover:text-error-500 dark:ring-gray-700 dark:hover:bg-white/5"
+                  >
+                    <TrashBinIcon className="size-5" />
+                  </button>
                 </div>
               </div>
             </article>
