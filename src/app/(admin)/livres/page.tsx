@@ -44,10 +44,7 @@ import { CoverUploader } from "@/components/livres/CoverUploader";
 import { BookFileUploader } from "@/components/livres/BookFileUploader";
 import { dataUrlToFile } from "@/lib/book-file";
 import { isApiConfigured } from "@/lib/api/client";
-import {
-  validateCreateBookInput,
-  type TypeLivre,
-} from "@/lib/admin/book-payload";
+import { validateCreateBookInput } from "@/lib/admin/book-payload";
 import { formatCatalogPages, formatCatalogYear, formatMaisonEdition } from "@/lib/catalog-display";
 import { useAdminPageSearch } from "@/context/AdminPageSearchContext";
 
@@ -766,7 +763,7 @@ function GrilleView({
                 >
                   <PencilIcon className="size-4" />
                 </button>
-                {livre.statut !== "ARCHIVE" ? (
+                {livre.statut !== "ARCHIVE" && (
                   <button
                     onClick={() => onArchiver(livre)}
                     className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-gray-700 transition hover:bg-white"
@@ -774,15 +771,14 @@ function GrilleView({
                   >
                     <BoxCubeIcon className="size-4" />
                   </button>
-                ) : (
-                  <button
-                    onClick={() => onSupprimer(livre)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-error-600 transition hover:bg-white"
-                    title="Supprimer définitivement"
-                  >
-                    <TrashBinIcon className="size-4" />
-                  </button>
                 )}
+                <button
+                  onClick={() => onSupprimer(livre)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-error-600 transition hover:bg-white"
+                  title="Supprimer définitivement"
+                >
+                  <TrashBinIcon className="size-4" />
+                </button>
               </div>
             </div>
             {/* Badge statut */}
@@ -995,16 +991,14 @@ function TableauView({
                       >
                         <BoxCubeIcon className="size-4" />
                       </button>
-                      {livre.statut === "ARCHIVE" && (
-                        <button
-                          type="button"
-                          title="Supprimer définitivement"
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-all hover:bg-gray-100 hover:text-error-500 dark:hover:bg-white/5"
-                          onClick={() => onSupprimer(livre)}
-                        >
-                          <TrashBinIcon className="size-4" />
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        title="Supprimer définitivement"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-all hover:bg-gray-100 hover:text-error-500 dark:hover:bg-white/5"
+                        onClick={() => onSupprimer(livre)}
+                      >
+                        <TrashBinIcon className="size-4" />
+                      </button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -1025,7 +1019,6 @@ type FormErrors = Partial<
     | "auteurs"
     | "fichier"
     | "langue"
-    | "urlExterne"
     | "isbn"
     | "annee"
     | "pages",
@@ -1063,8 +1056,6 @@ function AjouterLivreForm({
   const [nbPages, setNbPages] = useState("");
   const [categoriesIds, setCategoriesIds] = useState<string[]>([]);
   const [bibliothequesIds, setBibliothequesIds] = useState<string[]>([]);
-  const [typeLivre, setTypeLivre] = useState<TypeLivre>("INTERNE");
-  const [urlExterneLivre, setUrlExterneLivre] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const apiMode = isApiConfigured();
@@ -1076,8 +1067,6 @@ function AjouterLivreForm({
       categorieIds: categoriesIds,
       bibliothequeIds: bibliothequesIds,
       langue: langue.trim() || "Français",
-      type_livre: typeLivre,
-      urlExterneLivre: urlExterneLivre.trim() || undefined,
       anneePublication: annee === "" ? null : Number(annee),
       nombrePages: nbPages === "" ? null : Number(nbPages),
       fichier: fichierLivre ?? undefined,
@@ -1094,15 +1083,11 @@ function AjouterLivreForm({
     }
     if (storeError?.match(/fichier|format|50 Mo/i)) next.fichier = storeError;
     if (storeError?.match(/auteur/i)) next.auteurs = storeError;
-    if (storeError?.match(/URL/i)) next.urlExterne = storeError;
     if (storeError?.match(/ISBN/i)) next.isbn = storeError;
     if (storeError?.match(/année/i)) next.annee = storeError;
     if (storeError?.match(/pages/i)) next.pages = storeError;
     if (storeError?.match(/titre/i)) next.titre = storeError;
     if (storeError?.match(/maison/i)) next.titre = storeError;
-    // Toujours notifier par toast : le champ ciblé par l'erreur peut être masqué
-    // selon le type de livre (ex. section "Fichier" absente pour un livre
-    // EXTERNE), auquel cas l'utilisateur ne verrait sinon rien du tout.
     if (storeError) {
       toast.error(storeError);
     }
@@ -1114,8 +1099,6 @@ function AjouterLivreForm({
     fichierLivre,
     langue,
     bibliothequesIds,
-    typeLivre,
-    urlExterneLivre,
     apiMode,
     annee,
     nbPages,
@@ -1140,12 +1123,10 @@ function AjouterLivreForm({
       categorieIds: categoriesIds,
       bibliothequeIds: bibliothequesIds,
       langue: langue.trim() || "Français",
-      type_livre: typeLivre,
-      urlExterneLivre: urlExterneLivre.trim() || undefined,
       anneePublication: annee === "" ? null : Number(annee),
       nombrePages: nbPages === "" ? null : Number(nbPages),
       couvertureFile,
-      fichier: typeLivre === "INTERNE" ? fichierLivre ?? undefined : undefined,
+      fichier: fichierLivre ?? undefined,
       isbn: isbn.trim() || undefined,
       maisonEdition: maisonEdition.trim() || undefined,
       resume: resume.trim() || undefined,
@@ -1200,53 +1181,6 @@ function AjouterLivreForm({
 
         {/* Infos essentielles */}
         <div className="space-y-4">
-            {apiMode && (
-              <div>
-                <Label htmlFor="livre-type">Type de livre *</Label>
-                <div className="mt-2 flex flex-wrap gap-4">
-                  <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                    <input
-                      type="radio"
-                      name="livre-type"
-                      checked={typeLivre === "INTERNE"}
-                      onChange={() => setTypeLivre("INTERNE")}
-                    />
-                    Interne (fichier PDF/EPUB/MOBI)
-                  </label>
-                  <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                    <input
-                      type="radio"
-                      name="livre-type"
-                      checked={typeLivre === "EXTERNE"}
-                      onChange={() => setTypeLivre("EXTERNE")}
-                    />
-                    Externe (lien URL)
-                  </label>
-                </div>
-              </div>
-            )}
-            {apiMode && typeLivre === "EXTERNE" && (
-              <div>
-                <Label htmlFor="livre-url-ext">URL externe du livre *</Label>
-                <Input
-                  id="livre-url-ext"
-                  type="url"
-                  placeholder="https://…"
-                  value={urlExterneLivre}
-                  onChange={(e) => setUrlExterneLivre(e.target.value)}
-                  error={!!errors.urlExterne}
-                />
-                {errors.urlExterne && (
-                  <p className="mt-1.5 text-xs text-error-500">
-                    {errors.urlExterne}
-                  </p>
-                )}
-                <p className="mt-1 text-[11px] text-gray-400">
-                  Envoyé comme <code>url_externe_livre</code>, pas de fichier
-                  ni bibliothèque INTERNE requise.
-                </p>
-              </div>
-            )}
             <div>
               <Label htmlFor="livre-titre">Titre *</Label>
               <Input
@@ -1391,7 +1325,6 @@ function AjouterLivreForm({
             <div className="h-px flex-1 bg-gray-100 dark:bg-white/[0.06]" />
           </div>
 
-          {(!apiMode || typeLivre === "INTERNE") && (
           <div>
             <Label>Fichier du livre *</Label>
             <p className="mb-2 text-[11px] text-gray-400">
@@ -1406,7 +1339,6 @@ function AjouterLivreForm({
               <p className="mt-1.5 text-xs text-error-500">{errors.fichier}</p>
             )}
           </div>
-          )}
 
           <div>
             <MultiSelect
@@ -1432,26 +1364,24 @@ function AjouterLivreForm({
             )}
           </div>
 
-          {(!apiMode || typeLivre === "INTERNE") && (
-            <div>
-              <MultiSelect
-                label="Bibliothèque(s)"
-                options={multiBibliothequesOptions}
-                onChange={setBibliothequesIds}
-                disabled={referentielsLoading}
-                placeholder={
-                  referentielsLoading
-                    ? "Chargement…"
-                    : "Choisir une ou plusieurs bibliothèques"
-                }
-              />
-              {apiMode && (
-                <p className="mt-1 text-[11px] text-gray-400">
-                  Optionnel, association après création du livre.
-                </p>
-              )}
-            </div>
-          )}
+          <div>
+            <MultiSelect
+              label="Bibliothèque(s)"
+              options={multiBibliothequesOptions}
+              onChange={setBibliothequesIds}
+              disabled={referentielsLoading}
+              placeholder={
+                referentielsLoading
+                  ? "Chargement…"
+                  : "Choisir une ou plusieurs bibliothèques"
+              }
+            />
+            {apiMode && (
+              <p className="mt-1 text-[11px] text-gray-400">
+                Optionnel, association après création du livre.
+              </p>
+            )}
+          </div>
 
           <p className="text-[11px] text-gray-400">
             Le livre est publié par défaut à la création. Utilisez « Archiver » depuis le catalogue pour le masquer.

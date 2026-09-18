@@ -1041,7 +1041,7 @@ export default function DefisPage() {
                                   <TrashBinIcon className="size-4" />
                                 </button>
                               )}
-                              {apiMode && d.statut !== "ACTIF" && (
+                              {apiMode && (
                                 <button
                                   type="button"
                                   title="Supprimer définitivement"

@@ -6,6 +6,7 @@ import {
   clearApiBearerToken,
   getApiBearerToken,
   setApiBearerToken,
+  setApiTokens,
 } from "@/lib/api/auth-token";
 import {
   establishLocalSessionFromApiUser,
@@ -25,6 +26,7 @@ import { resetUsersListCache } from "@/lib/users-store";
 
 type PasswordLoginResponse = {
   access_token: string;
+  refresh_token?: string;
   user?: {
     id: string;
     email: string;
@@ -90,7 +92,11 @@ export async function loginAdminViaApi(
       };
     }
 
-    setApiBearerToken(res.access_token.trim());
+    if (res.refresh_token?.trim()) {
+      setApiTokens(res.access_token.trim(), res.refresh_token.trim());
+    } else {
+      setApiBearerToken(res.access_token.trim());
+    }
     applyApiSessionSideEffects();
 
     const admin = establishLocalSessionFromApiUser({
