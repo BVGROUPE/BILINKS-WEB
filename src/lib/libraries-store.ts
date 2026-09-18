@@ -136,6 +136,7 @@ export async function createLibraryPersisted(input: {
   description?: string;
   urlExterne?: string | null;
   couvertureUrl?: string;
+  couvertureFile?: File;
   icone?: string;
 }): Promise<
   { ok: true; bibliotheque: MockBibliotheque } | { ok: false; error: string }
@@ -158,27 +159,24 @@ export async function createLibraryPersisted(input: {
 
   if (isApiConfigured()) {
     try {
-      const body: Record<string, string> = {
-        nom,
-        type: input.type,
-      };
-      if (input.description?.trim()) {
-        body.description = input.description.trim();
+      const form = new FormData();
+      form.set("nom", nom);
+      form.set("type", input.type);
+      if (input.description?.trim()) form.set("description", input.description.trim());
+      if (input.couvertureFile) {
+        form.set("couverture", input.couvertureFile);
+      } else if (input.couvertureUrl?.trim()) {
+        form.set("couverture_url", input.couvertureUrl.trim());
       }
-      if (input.couvertureUrl?.trim()) {
-        body.couverture_url = input.couvertureUrl.trim();
-      }
-      if (input.icone?.trim()) {
-        body.icone = input.icone.trim();
-      }
+      if (input.icone?.trim()) form.set("icone", input.icone.trim());
       // INTERNE : url_externe interdit — ne jamais l’envoyer (HTTP 400).
       if (input.type === "EXTERNE") {
-        body.url_externe = input.urlExterne!.trim();
+        form.set("url_externe", input.urlExterne!.trim());
       }
 
       const created = await apiRequest<AdminLibraryCreateResponse>(
         ADMIN_ROUTES.libraries.create,
-        { method: "POST", body: JSON.stringify(body) }
+        { method: "POST", body: form }
       );
 
       await fetchLibrariesPersisted();
@@ -217,6 +215,7 @@ export async function updateLibraryPersisted(
     description?: string;
     urlExterne?: string | null;
     couvertureUrl?: string;
+    couvertureFile?: File;
     icone?: string;
   }
 ): Promise<
@@ -225,28 +224,10 @@ export async function updateLibraryPersisted(
   if (isApiConfigured()) {
     try {
       const existing = getLibraryById(id);
-      const body: Record<string, string> = {};
-      let hasField = false;
+      let hasField = Boolean(patch.couvertureFile);
 
-      if (patch.nom !== undefined) {
-        const nom = patch.nom.trim();
-        if (!nom) return { ok: false, error: "Le nom est obligatoire." };
-        body.nom = nom;
-        hasField = true;
-      }
-      if (patch.description !== undefined) {
-        body.description = patch.description.trim();
-        hasField = true;
-      }
-      if (patch.couvertureUrl?.trim()) {
-        body.couverture_url = patch.couvertureUrl.trim();
-        hasField = true;
-      }
-      if (patch.icone?.trim()) {
-        body.icone = patch.icone.trim();
-        hasField = true;
-      }
       // url_externe : uniquement pour une bibliothèque déjà EXTERNE (jamais si INTERNE).
+      let urlExterne: string | undefined;
       if (existing?.type === "EXTERNE" && patch.urlExterne !== undefined) {
         const url = patch.urlExterne?.trim() ?? "";
         if (!url) {
@@ -255,8 +236,35 @@ export async function updateLibraryPersisted(
         if (!isValidLibraryUrl(url)) {
           return { ok: false, error: "URL invalide : utilisez http:// ou https://." };
         }
-        body.url_externe = url;
+        urlExterne = url;
         hasField = true;
+      }
+
+      if (patch.nom !== undefined && !patch.nom.trim()) {
+        return { ok: false, error: "Le nom est obligatoire." };
+      }
+
+      const form = new FormData();
+      if (patch.nom !== undefined) {
+        form.set("nom", patch.nom.trim());
+        hasField = true;
+      }
+      if (patch.description !== undefined) {
+        form.set("description", patch.description.trim());
+        hasField = true;
+      }
+      if (patch.couvertureFile) {
+        form.set("couverture", patch.couvertureFile);
+      } else if (patch.couvertureUrl?.trim()) {
+        form.set("couverture_url", patch.couvertureUrl.trim());
+        hasField = true;
+      }
+      if (patch.icone?.trim()) {
+        form.set("icone", patch.icone.trim());
+        hasField = true;
+      }
+      if (urlExterne !== undefined) {
+        form.set("url_externe", urlExterne);
       }
 
       if (!hasField) {
@@ -265,7 +273,7 @@ export async function updateLibraryPersisted(
 
       await apiRequest<AdminLibraryUpdateResponse>(ADMIN_ROUTES.libraries.byId(id), {
         method: "PATCH",
-        body: JSON.stringify(body),
+        body: form,
       });
 
       await fetchLibrariesPersisted();

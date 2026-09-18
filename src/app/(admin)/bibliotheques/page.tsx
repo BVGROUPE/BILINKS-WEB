@@ -29,8 +29,10 @@ import TextArea from "@/components/form/input/TextArea";
 import Radio from "@/components/form/input/Radio";
 import { IconePicker } from "@/components/icones/IconePicker";
 import { IconeBadge } from "@/components/icones/IconeBadge";
+import { LibraryCoverUploader } from "@/components/bibliotheques/LibraryCoverUploader";
 import { useAdminPageSearch } from "@/context/AdminPageSearchContext";
 import { PencilIcon, ArrowRightIcon, FolderIcon, TrashBinIcon } from "@/icons";
+import { Globe } from "lucide-react";
 
 function formatLivres(n: number): string {
   return `${new Intl.NumberFormat("fr-FR").format(n)} livre${n > 1 ? "s" : ""}`;
@@ -101,6 +103,7 @@ function BibliothequeForm({
     type: TypeBibliotheque;
     urlExterne?: string | null;
     icone?: string | null;
+    couvertureFile?: File | null;
   }) => Promise<void>;
   onCancel: () => void;
 }) {
@@ -111,6 +114,10 @@ function BibliothequeForm({
   );
   const [type, setType] = useState<TypeBibliotheque>(initial?.type ?? "INTERNE");
   const [urlExterne, setUrlExterne] = useState(initial?.urlExterne ?? "");
+  const [couverturePreview, setCouverturePreview] = useState<string | null>(
+    initial?.couvertureUrl ?? null
+  );
+  const [couvertureFile, setCouvertureFile] = useState<File | null>(null);
   const isEdit = Boolean(initial);
   const [errors, setErrors] = useState<FormErr>({});
   const [submitting, setSubmitting] = useState(false);
@@ -143,6 +150,7 @@ function BibliothequeForm({
       type,
       urlExterne: type === "EXTERNE" ? urlExterne.trim() : null,
       icone,
+      couvertureFile,
     });
     setSubmitting(false);
   };
@@ -227,7 +235,10 @@ function BibliothequeForm({
                 value="EXTERNE"
                 checked={type === "EXTERNE"}
                 label="Externe"
-                onChange={() => setType("EXTERNE")}
+                onChange={() => {
+                  setType("EXTERNE");
+                  setIcone(null);
+                }}
               />
             </div>
           )}
@@ -250,14 +261,28 @@ function BibliothequeForm({
           </div>
         )}
 
-        <div>
-          <Label>Icône</Label>
-          <p className="mb-3 text-theme-xs text-gray-500 dark:text-gray-400">
-            Affichée à défaut d’une couverture uploadée — y compris pour une
-            bibliothèque externe, tant qu’elle n’a pas de couverture.
-          </p>
-          <IconePicker value={icone} onChange={setIcone} label="Icone de la bibliotheque" />
-        </div>
+        <LibraryCoverUploader
+          previewUrl={couverturePreview}
+          onChange={(file, preview) => {
+            setCouvertureFile(file);
+            setCouverturePreview(preview);
+          }}
+          hint={
+            type === "EXTERNE"
+              ? "Facultative : sans couverture, une icône générique est affichée à la place — une bibliothèque externe n'a pas d'icône thématique dédiée."
+              : "Facultative : si aucune couverture n'est fournie, l'icône symbolique ci-dessous est affichée à la place."
+          }
+        />
+
+        {type === "INTERNE" && (
+          <div>
+            <Label>Icône</Label>
+            <p className="mb-3 text-theme-xs text-gray-500 dark:text-gray-400">
+              Utilisée uniquement si aucune couverture n&apos;est fournie ci-dessus.
+            </p>
+            <IconePicker value={icone} onChange={setIcone} label="Icone de la bibliotheque" />
+          </div>
+        )}
 
         {initial?.statut === "ARCHIVEE" && (
           <p className="text-sm text-warning-600 dark:text-warning-400">
@@ -347,6 +372,7 @@ export default function BibliothequesPage() {
     type: TypeBibliotheque;
     urlExterne?: string | null;
     icone?: string | null;
+    couvertureFile?: File | null;
   }) => {
     if (modalMode === "modifier" && edition) {
       const result = await updateLibraryPersisted(edition.id, {
@@ -355,6 +381,7 @@ export default function BibliothequesPage() {
         urlExterne:
           edition.type === "EXTERNE" ? (data.urlExterne ?? undefined) : undefined,
         icone: data.icone ?? undefined,
+        couvertureFile: data.couvertureFile ?? undefined,
       });
       if (!result.ok) {
         toast.error(result.error);
@@ -368,6 +395,7 @@ export default function BibliothequesPage() {
         description: data.description,
         urlExterne: data.urlExterne,
         icone: data.icone ?? undefined,
+        couvertureFile: data.couvertureFile ?? undefined,
       });
       if (!result.ok) {
         toast.error(result.error);
@@ -512,7 +540,12 @@ export default function BibliothequesPage() {
                     className="mb-3 h-16 w-16 rounded-full object-cover"
                   />
                 ) : (
-                  <IconeBadge icone={b.icone} size="md" className="mb-3" />
+                  <IconeBadge
+                    icone={b.icone}
+                    size="md"
+                    className="mb-3"
+                    fallback={b.type === "EXTERNE" ? Globe : undefined}
+                  />
                 )}
                 <div className="mb-3 flex flex-wrap gap-2">
                   {b.type === "INTERNE" ? (
