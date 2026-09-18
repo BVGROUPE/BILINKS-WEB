@@ -131,6 +131,7 @@ export const ADMIN_ROUTES = {
 export const AUTH_ROUTES = {
   login: "/auth/password/login",
   changePassword: "/auth/password/change",
+  refresh: "/auth/token/refresh",
 } as const;
 
 export const PROFILE_ROUTES = {
