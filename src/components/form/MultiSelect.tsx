@@ -11,6 +11,8 @@ interface MultiSelectProps {
   label: string;
   options: Option[];
   defaultSelected?: string[];
+  /** Sélection contrôlée : si fournie, remplace l'état interne. */
+  value?: string[];
   onChange?: (selected: string[]) => void;
   disabled?: boolean;
   placeholder?: string;
@@ -22,14 +24,17 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   label,
   options,
   defaultSelected = EMPTY_SELECTED,
+  value,
   onChange,
   disabled = false,
   placeholder = "Choisir…",
 }) => {
   const listboxId = useId();
-  const [selectedOptions, setSelectedOptions] = useState<string[]>(
+  const [internalSelected, setInternalSelected] = useState<string[]>(
     () => defaultSelected
   );
+  const selectedOptions = value ?? internalSelected;
+  const setSelectedOptions = setInternalSelected;
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [isMounted, setIsMounted] = useState(false);

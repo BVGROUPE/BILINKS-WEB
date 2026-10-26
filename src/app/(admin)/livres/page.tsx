@@ -8,7 +8,11 @@ import { Breadcrumb, adminCrumb } from "@/components/Breadcrumb";
 import { EmptyState } from "@/components/EmptyState";
 import type { MockAuteur, MockLivre } from "@/lib/mock-data";
 import { fetchCategoriesPersisted, getAllCategories } from "@/lib/categories-store";
-import { fetchAuteursPersisted, getAllAuteurs } from "@/lib/auteurs-store";
+import {
+  createAuteurPersisted,
+  fetchAuteursPersisted,
+  getAllAuteurs,
+} from "@/lib/auteurs-store";
 import {
   fetchLibrariesPersisted,
   getAllLibraries,
@@ -420,12 +424,6 @@ export default function LivresPage() {
         categories.length === 0 && auteurs.length === 0 ? "modal" : "silent"
       );
     }
-    if (apiMode && getAllAuteurs().length === 0) {
-      toast.error(
-        "Aucun auteur disponible. Créez-en un dans Auteurs ou vérifiez votre session.",
-        { duration: 5000 }
-      );
-    }
   };
 
   return (
@@ -679,6 +677,7 @@ export default function LivresPage() {
           multiCategoriesOptions={multiCategoriesOptions}
           multiBibliothequesOptions={multiBibliothequesOptions}
           referentielsLoading={modalReferentielsLoading}
+          onAuteurCreated={(auteur) => setAuteurs((prev) => [...prev, auteur])}
           onSuccess={async (created) => {
             setModalOuvert(false);
             toast.success(
@@ -1031,12 +1030,14 @@ function AjouterLivreForm({
   multiCategoriesOptions,
   multiBibliothequesOptions,
   referentielsLoading = false,
+  onAuteurCreated,
   onSuccess,
 }: {
   multiAuteursOptions: { value: string; text: string; selected: boolean }[];
   multiCategoriesOptions: { value: string; text: string; selected: boolean }[];
   multiBibliothequesOptions: { value: string; text: string; selected: boolean }[];
   referentielsLoading?: boolean;
+  onAuteurCreated: (auteur: MockAuteur) => void;
   onSuccess: (created: {
     id: string;
     titre: string;
@@ -1058,7 +1059,49 @@ function AjouterLivreForm({
   const [bibliothequesIds, setBibliothequesIds] = useState<string[]>([]);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  const [nouvelAuteurOuvert, setNouvelAuteurOuvert] = useState(false);
+  const [nouvelAuteurPrenom, setNouvelAuteurPrenom] = useState("");
+  const [nouvelAuteurNom, setNouvelAuteurNom] = useState("");
+  const [nouvelAuteurErreur, setNouvelAuteurErreur] = useState<string | null>(null);
+  const [creationAuteur, setCreationAuteur] = useState(false);
   const apiMode = isApiConfigured();
+
+  const fermerNouvelAuteur = () => {
+    setNouvelAuteurOuvert(false);
+    setNouvelAuteurPrenom("");
+    setNouvelAuteurNom("");
+    setNouvelAuteurErreur(null);
+  };
+
+  const creerNouvelAuteur = async () => {
+    if (creationAuteur) return;
+    if (!nouvelAuteurNom.trim()) {
+      setNouvelAuteurErreur("Le nom est obligatoire.");
+      return;
+    }
+    setCreationAuteur(true);
+    const result = await createAuteurPersisted({
+      prenom: nouvelAuteurPrenom,
+      nom: nouvelAuteurNom,
+    });
+    setCreationAuteur(false);
+    if (!result.ok) {
+      setNouvelAuteurErreur(result.error);
+      return;
+    }
+    onAuteurCreated(result.auteur);
+    setAuteurIds((prev) => [...prev, result.auteur.id]);
+    setErrors((prev) => ({ ...prev, auteurs: undefined }));
+    toast.success("Auteur créé et sélectionné.");
+    fermerNouvelAuteur();
+  };
+
+  // Entrée dans le mini-formulaire : crée l'auteur au lieu de soumettre le livre.
+  const handleNouvelAuteurKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    void creerNouvelAuteur();
+  };
 
   const validate = useCallback(() => {
     const payload = {
@@ -1199,6 +1242,7 @@ function AjouterLivreForm({
               <MultiSelect
                 label="Auteur(s) *"
                 options={multiAuteursOptions}
+                value={auteurIds}
                 onChange={setAuteurIds}
                 disabled={referentielsLoading}
                 placeholder={
@@ -1208,17 +1252,68 @@ function AjouterLivreForm({
               {errors.auteurs && (
                 <p className="mt-1.5 text-xs text-error-500">{errors.auteurs}</p>
               )}
-              {multiAuteursOptions.length === 0 && (
-                <p className="mt-1.5 text-xs text-warning-600 dark:text-warning-400">
-                  Aucun auteur chargé.{" "}
-                  <Link
-                    href="/admin/auteurs"
-                    className="font-medium underline"
-                  >
-                    Créer un auteur
-                  </Link>{" "}
-                  puis rouvrez ce formulaire.
-                </p>
+              {!nouvelAuteurOuvert ? (
+                <button
+                  type="button"
+                  onClick={() => setNouvelAuteurOuvert(true)}
+                  disabled={referentielsLoading}
+                  className="mt-2 text-xs font-medium text-brand-500 hover:text-brand-600 disabled:opacity-50 dark:text-brand-400"
+                >
+                  + Auteur introuvable ? Créer un nouvel auteur
+                </button>
+              ) : (
+                <div className="mt-3 space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                    Nouvel auteur
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="nouvel-auteur-prenom">Prénom</Label>
+                      <Input
+                        id="nouvel-auteur-prenom"
+                        type="text"
+                        placeholder="Ex. : Victor"
+                        value={nouvelAuteurPrenom}
+                        onChange={(e) => setNouvelAuteurPrenom(e.target.value)}
+                        onKeyDown={handleNouvelAuteurKeyDown}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="nouvel-auteur-nom">Nom *</Label>
+                      <Input
+                        id="nouvel-auteur-nom"
+                        type="text"
+                        placeholder="Ex. : Hugo"
+                        value={nouvelAuteurNom}
+                        onChange={(e) => setNouvelAuteurNom(e.target.value)}
+                        onKeyDown={handleNouvelAuteurKeyDown}
+                        error={!!nouvelAuteurErreur}
+                      />
+                    </div>
+                  </div>
+                  {nouvelAuteurErreur && (
+                    <p className="text-xs text-error-500">{nouvelAuteurErreur}</p>
+                  )}
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      type="button"
+                      onClick={fermerNouvelAuteur}
+                      disabled={creationAuteur}
+                    >
+                      Annuler
+                    </Button>
+                    <Button
+                      size="sm"
+                      type="button"
+                      onClick={creerNouvelAuteur}
+                      disabled={creationAuteur}
+                    >
+                      {creationAuteur ? "Création…" : "Créer et sélectionner"}
+                    </Button>
+                  </div>
+                </div>
               )}
             </div>
 
