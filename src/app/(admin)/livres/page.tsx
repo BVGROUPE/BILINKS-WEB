@@ -745,8 +745,9 @@ function GrilleView({
               showShine
               className="!rounded-t-2xl"
             />
-            {/* Overlay actions au hover */}
-            <div className="pointer-events-none absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:pointer-events-auto group-hover:opacity-100">
+            {/* Overlay actions au hover — variante sans @media (hover: hover) de Tailwind v4,
+                sinon invisible sur les PC à écran tactile qui se déclarent « hover: none ». */}
+            <div className="pointer-events-none absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 transition-opacity duration-300 [.group:hover_&]:pointer-events-auto [.group:hover_&]:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
               <div className="flex gap-2 pb-4">
                 <button
                   onClick={() => onVoir(livre.id)}
