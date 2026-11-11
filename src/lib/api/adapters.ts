@@ -40,7 +40,9 @@ export function mapAdminBookToMockLivre(row: AdminBookListItemApi): MockLivre {
     id: row.id,
     titre: row.titre,
     auteurs:
-      row.auteurs?.map((a) => `${a.prenom} ${a.nom}`.trim()).filter(Boolean) ??
+      row.auteurs
+        ?.map((a) => [a.prenom, a.nom].filter(Boolean).join(" ").trim())
+        .filter(Boolean) ??
       [],
     auteurIds: row.auteurs?.map((a) => a.id) ?? [],
     categorieIds: categories.map((c) => c.id),
